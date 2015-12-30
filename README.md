@@ -1,2 +1,3 @@
 # arcade
-Various classic arcade games remade in pygame
+Simple classic arcade games remade in pygame.
+
