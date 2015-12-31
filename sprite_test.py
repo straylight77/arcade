@@ -51,17 +51,20 @@ def main():
             sprites.append(img.subsurface( (x*s,y*s,s,s) ))
 
     i = 0
+    sprite_done = False
+    pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
     while True:
         handle_events()
 
         # draw frame
         DISPLAYSURF.fill(BGCOLOR)
 
-        DISPLAYSURF.blit(sprites[i], (25, 25))
+        DISPLAYSURF.blit(sprites[i], pos)
 
         i += 1
         if i >= len(sprites):
             i = 0
+            pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
 
         #pygame.display.update()
         pygame.display.flip()
