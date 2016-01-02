@@ -91,7 +91,7 @@ class Asteroid():
             img = self.ast_img[self.frame]
             DISPLAYSURF.blit(img, (x, y))
             self.frame += 1
-            if self.frame >= len(self.exp_img):
+            if self.frame >= len(self.ast_img):
                 self.frame = 0
 
         elif self.state == self.EXPLODING:
