@@ -106,68 +106,93 @@ class Asteroid():
             pass
 
 
+class Explosion():
+
+    def __init__(self, pos):
+        self.pos = pos
+        self.frame = 0
+
+        #load explosion sprite
+        self.exp_spritesheet = pygame.image.load('assets/explosion1_64x64.png')
+        self.exp_img = []
+        s = 64
+        for y in range(0, 5):
+            for x in range (0, 5):
+                self.exp_img.append(self.exp_spritesheet.subsurface( (x*s,y*s,s,s) ))
+
+
+    def update(self):
+        pass
+
+    def draw(self):
+        x = self.pos[0] - 32
+        y = self.pos[1] - 32
+
+        if self.frame < len(self.exp_img):
+            img = self.exp_img[self.frame]
+            DISPLAYSURF.blit(img, (x, y))
+            self.frame += 1
+
+    def is_done(self):
+        return self.frame >= len(self.exp_img)
+
+
+        
+
 def terminate():
     pygame.quit()
     sys.exit()
 
 def advance_frame():
-    pygame.display.update()
+    #pygame.display.update()
+    pygame.display.flip()
     FPSCLOCK.tick(FPS)
-
-def handle_events():
-    #event handling
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            terminate()
-        elif event.type == KEYUP:
-            if event.key == K_ESCAPE:
-                terminate()
-
-    return None
 
 
 def main():
 
-    sprites = []
-    sprites.append( Asteroid() )
+    asteroids = []
+    asteroids.append( Asteroid() )
+    explosions = []
 
     #main game loop
     while True:
 
-       #event handling
+        #event handling
         for event in pygame.event.get():
             if event.type == QUIT:
                 terminate()
 
             elif event.type == KEYUP:
                 if event.key == K_SPACE:
-                    for i in range(0, len(sprites)):
-                        if sprites[i].is_normal():
-                            sprites[i].start_exploding()
-                            break;
-
+                    if len(asteroids) > 0:
+                        a = asteroids.pop()
+                        explosions.append( Explosion(a.pos) )
                 if event.key == K_n:
-                    sprites.append( Asteroid() )
+                    asteroids.append( Asteroid() )
                 if event.key == K_ESCAPE:
                     terminate()
 
 
         #update game objects
-        if len(sprites) > 0 and sprites[0].is_done():
-            sprites = sprites[1:]
-        for s in sprites:
+        for s in asteroids:
             s.update()
+        #TODO: cull the explosions list once the animation is done    
+        #for i in range(0, len(explosions)):
+        #    if explosions[i].is_done():
+        #        del(explosions[i])
+            
 
         # draw frame
         DISPLAYSURF.fill(BGCOLOR)
-        for s in sprites:
+        for s in asteroids:
             s.draw()
+        for e in explosions:
+            e.draw()
 
-        #pygame.display.update()
-        pygame.display.flip()
-        FPSCLOCK.tick(FPS)
+        advance_frame()
 
-    terminate()
+    terminate()   # won't actually get called
 
 if __name__ == '__main__':
     main()
