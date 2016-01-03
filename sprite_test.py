@@ -25,21 +25,14 @@ class Asteroid():
 
     ast_spritesheet = None
     ast_img = []
-    exp_spritesheet = None
-    exp_img = []
     pos = (0, 0)
     vel = (0, 0)
-    state = 1
-    NORMAL = 1
-    EXPLODING = 2
-    DONE = 3
     frame = 0
 
     def __init__(self):
         self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
         s = random.randint(3, 10)
         self.vel = (random.randint(-s, s), random.randint(-s, s))
-        self.state = self.NORMAL
 
         #TODO: have only 1 instance of the spritesheet.  use a class variable?
 
@@ -50,29 +43,6 @@ class Asteroid():
         for y in range(0,6):
             for x in range (0, 5):
                 self.ast_img.append(self.ast_spritesheet.subsurface( (x*s,y*s,s,s) ))
-
-        #load explosion sprite
-        self.exp_spritesheet = pygame.image.load('assets/explosion1_64x64.png')
-        self.exp_img = []
-        s = 64
-        for y in range(0, 5):
-            for x in range (0, 5):
-                self.exp_img.append(self.exp_spritesheet.subsurface( (x*s,y*s,s,s) ))
-
-    def is_normal(self):
-        return self.state == self.NORMAL
-
-    def is_done(self):
-        return self.state == self.DONE
-
-    def is_exploding(self):
-        return self.state == self.EXPLODING
-
-    def start_exploding(self):
-        if self.state == self.NORMAL:
-            self.state = self.EXPLODING
-            self.vel = (0, 0)
-            self.frame = 0
 
     def update(self):
         x = self.pos[0] + self.vel[0]
@@ -87,23 +57,11 @@ class Asteroid():
         x = self.pos[0] - 32
         y = self.pos[1] - 32
 
-        if self.state == self.NORMAL:
-            img = self.ast_img[self.frame]
-            DISPLAYSURF.blit(img, (x, y))
-            self.frame += 1
-            if self.frame >= len(self.ast_img):
-                self.frame = 0
-
-        elif self.state == self.EXPLODING:
-            img = self.exp_img[self.frame]
-            DISPLAYSURF.blit(img, (x, y))
-            self.frame += 1
-            if self.frame >= len(self.exp_img):
-                self.frame = 0
-                self.state = self.DONE
-
-        else:
-            pass
+        img = self.ast_img[self.frame]
+        DISPLAYSURF.blit(img, (x, y))
+        self.frame += 1
+        if self.frame >= len(self.ast_img):
+            self.frame = 0
 
 
 class Explosion():
@@ -137,7 +95,6 @@ class Explosion():
         return self.frame >= len(self.exp_img)
 
 
-        
 
 def terminate():
     pygame.quit()
@@ -149,54 +106,48 @@ def advance_frame():
     FPSCLOCK.tick(FPS)
 
 
-def main():
 
-    asteroids = []
-    asteroids.append( Asteroid() )
-    explosions = []
+asteroids = []
+asteroids.append( Asteroid() )
+explosions = []
 
-    #main game loop
-    while True:
+#main game loop
+while True:
 
-        #event handling
-        for event in pygame.event.get():
-            if event.type == QUIT:
+    #event handling
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            terminate()
+
+        elif event.type == KEYUP:
+            if event.key == K_SPACE:
+                if len(asteroids) > 0:
+                    a = asteroids.pop()
+                    explosions.append( Explosion(a.pos) )
+            if event.key == K_n:
+                asteroids.append( Asteroid() )
+            if event.key == K_ESCAPE:
                 terminate()
 
-            elif event.type == KEYUP:
-                if event.key == K_SPACE:
-                    if len(asteroids) > 0:
-                        a = asteroids.pop()
-                        explosions.append( Explosion(a.pos) )
-                if event.key == K_n:
-                    asteroids.append( Asteroid() )
-                if event.key == K_ESCAPE:
-                    terminate()
 
+    #update game objects
+    for s in asteroids:
+        s.update()
+    #TODO: cull the explosions list once the animation is done    
+    #for i in range(0, len(explosions)):
+    #    if explosions[i].is_done():
+    #        del(explosions[i])
 
-        #update game objects
-        for s in asteroids:
-            s.update()
-        #TODO: cull the explosions list once the animation is done    
-        #for i in range(0, len(explosions)):
-        #    if explosions[i].is_done():
-        #        del(explosions[i])
-            
+    # draw frame
+    DISPLAYSURF.fill(BGCOLOR)
+    for s in asteroids:
+        s.draw()
+    for e in explosions:
+        e.draw()
 
-        # draw frame
-        DISPLAYSURF.fill(BGCOLOR)
-        for s in asteroids:
-            s.draw()
-        for e in explosions:
-            e.draw()
+    advance_frame()
 
-        advance_frame()
-
-    terminate()   # won't actually get called
-
-if __name__ == '__main__':
-    main()
-
+terminate()   # won't actually get called
 
 
 
