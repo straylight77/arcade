@@ -140,7 +140,7 @@ while True:
 
         elif event.type == KEYUP:
             if event.key == K_SPACE:
-                if len(asteroids) > 0:
+                if asteroids:
                     a = asteroids.sprites()[0]
                     explosions.add( Explosion(a.pos) )
                     a.kill()
