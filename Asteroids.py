@@ -124,7 +124,6 @@ BASICFONT = pygame.font.SysFont('courier', 15)
 pygame.display.set_caption('pyGame Template')
 random.seed()
 
-
 a = Asteroid()
 asteroids = pygame.sprite.RenderPlain(a)
 explosions = pygame.sprite.RenderPlain()
@@ -159,10 +158,14 @@ while True:
 
     # draw frame
     DISPLAYSURF.fill(BGCOLOR)
-    asteroids.draw(DISPLAYSURF)
     explosions.draw(DISPLAYSURF)
+    asteroids.draw(DISPLAYSURF)
 
-    advance_frame()
+    #advance frame
+    #pygame.display.update()
+    pygame.display.flip()
+    FPSCLOCK.tick(FPS)
+
 
 terminate()   # won't actually get called
 
