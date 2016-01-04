@@ -12,6 +12,7 @@ DARKGRAY  = ( 40,  40,  40)
 RED       = (255,  40,  40)
 BGCOLOR   = BLACK
 
+
 #### Class: Asteroid ########################################################
 class Asteroid(pygame.sprite.Sprite):
 
@@ -23,16 +24,17 @@ class Asteroid(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        #self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
-        #s = random.randint(3, 10)
-        #self.vel = (random.randint(-s, s), random.randint(-s, s))
-        self.pos = (MAX_X/2-100, MAX_Y/2-100)
-        self.vel = (9, 0)
+
+        self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
+        s = random.randint(3, 10)
+        self.vel = (random.randint(-s, s), random.randint(-s, s))
+        #self.pos = (MAX_X/2-100, MAX_Y/2-100)
+        #self.vel = (9, 0)
 
         #TODO: have only 1 instance of the spritesheet.  use a class variable?
 
         #load asteroid sprite
-        self.ast_spritesheet = pygame.image.load('assets/asteroid2.png')
+        self.ast_spritesheet = pygame.image.load('assets/asteroid2.png').convert_alpha()
         self.ast_img = []
         s = 64
         for y in range(0,6):
@@ -40,9 +42,9 @@ class Asteroid(pygame.sprite.Sprite):
                 self.ast_img.append(self.ast_spritesheet.subsurface( (x*s,y*s,s,s) ))
 
         self.frame = 0
-        self.rect = pygame.Rect( 0, 0, 64, 64 )
-        self.rect.center = self.pos
         self.image = self.ast_img[self.frame]
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
 
     def update(self):
         x = self.pos[0] + self.vel[0]
@@ -71,7 +73,7 @@ class Explosion(pygame.sprite.Sprite):
         self.frame = 0
 
         #load explosion sprite
-        self.exp_spritesheet = pygame.image.load('assets/explosion1_64x64.png')
+        self.exp_spritesheet = pygame.image.load('assets/explosion1_64x64.png').convert_alpha()
         self.exp_img = []
         s = 64
         for y in range(0, 5):
@@ -100,7 +102,7 @@ class Ship(pygame.sprite.Sprite):
         self.vel = (0, 0)
         #self.image_orig, self.rect = load_image("ship1_32x32.png")
 
-        self.image_orig = pygame.image.load('assets/ship1_32x32.png')
+        self.image_orig = pygame.image.load('assets/ship1_32x32.png').convert_alpha()
         self.rect = self.image_orig.get_rect()
 
         self.rect.center = self.pos
@@ -143,6 +145,8 @@ class Shot(pygame.sprite.Sprite):
         #draw sprite
         size = 8
         self.image = pygame.Surface((size, size))
+        self.image.fill(BLACK)
+        self.image.set_colorkey(BLACK)
         pygame.draw.circle(self.image, (192,  10,  10), (size/2, size/2), size/2)
         pygame.draw.circle(self.image, (192, 128, 128), (size/2, size/2), size/4)
         self.rect = self.image.get_rect()
