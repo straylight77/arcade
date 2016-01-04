@@ -1,4 +1,4 @@
-import pygame, sys, math, random
+import pygame, sys, math, random, os
 from pygame.locals import *
 
 FPS = 30
@@ -12,7 +12,7 @@ DARKGRAY  = ( 40,  40,  40)
 RED       = (255,  40,  40)
 BGCOLOR   = BLACK
 
-
+#### Class: Asteroid ########################################################
 class Asteroid(pygame.sprite.Sprite):
 
     ast_spritesheet = None
@@ -59,7 +59,7 @@ class Asteroid(pygame.sprite.Sprite):
 
 
 
-
+#### Class: Explosion ############################################
 class Explosion(pygame.sprite.Sprite):
 
     def __init__(self, pos):
@@ -87,6 +87,51 @@ class Explosion(pygame.sprite.Sprite):
     def is_done(self):
         return self.frame >= len(self.exp_img)
 
+
+#### class: Ship #################################################
+class Ship(pygame.sprite.Sprite):
+
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.pos = (MAX_X/2, MAX_Y/2)
+        self.angle = 0
+        self.vel = (0, 0)
+        #self.image_orig, self.rect = load_image("ship1_32x32.png")
+
+        self.image_orig = pygame.image.load('assets/ship1_32x32.png')
+        self.rect = self.image_orig.get_rect()
+
+        self.rect.center = self.pos
+        self.image = self.image_orig
+
+    def update(self, thrust, left, right):
+        if left:
+            self.angle += 10
+        if right:
+            self.angle -= 10
+        if thrust:
+            vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.5
+            vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.5
+            self.vel = (vel_x, vel_y)
+
+        if self.angle >= 360:
+            self.angle -= 360
+        elif self.angle < 0:
+            self.angle += 360
+
+        x = self.pos[0] + self.vel[0]
+        y = self.pos[1] + self.vel[1]
+        if x >= MAX_X:  x = 0
+        if x < 0:       x = MAX_X
+        if y >= MAX_Y:  y = 0
+        if y < 0:       y = MAX_Y
+        self.pos = (x, y)
+
+        print self.vel, self.pos
+
+        self.image = pygame.transform.rotate(self.image_orig, self.angle)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
 
 
 
@@ -128,6 +173,12 @@ a = Asteroid()
 asteroids = pygame.sprite.RenderPlain(a)
 explosions = pygame.sprite.RenderPlain()
 
+s = Ship()
+ships = pygame.sprite.RenderPlain(s)
+
+cmd_thrust = False
+cmd_left = False
+cmd_right = False
 
 #main game loop
 while True:
@@ -137,7 +188,16 @@ while True:
         if event.type == QUIT:
             terminate()
 
+        elif event.type == KEYDOWN:
+            if event.key == K_UP:    cmd_thrust = True
+            if event.key == K_LEFT:  cmd_left = True
+            if event.key == K_RIGHT: cmd_right = True
+
         elif event.type == KEYUP:
+            if event.key == K_UP:    cmd_thrust = False
+            if event.key == K_LEFT:  cmd_left = False
+            if event.key == K_RIGHT: cmd_right = False
+
             if event.key == K_SPACE:
                 if asteroids:
                     a = asteroids.sprites()[0]
@@ -152,6 +212,7 @@ while True:
     #update game objects
     asteroids.update()
     explosions.update()
+    ships.update(cmd_thrust, cmd_left, cmd_right)
     for exp in explosions.sprites():
         if exp.is_done():
             exp.kill()
@@ -160,6 +221,7 @@ while True:
     DISPLAYSURF.fill(BGCOLOR)
     explosions.draw(DISPLAYSURF)
     asteroids.draw(DISPLAYSURF)
+    ships.draw(DISPLAYSURF)
 
     #advance frame
     #pygame.display.update()
