@@ -23,9 +23,11 @@ class Asteroid(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
-        s = random.randint(3, 10)
-        self.vel = (random.randint(-s, s), random.randint(-s, s))
+        #self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
+        #s = random.randint(3, 10)
+        #self.vel = (random.randint(-s, s), random.randint(-s, s))
+        self.pos = (MAX_X/2-100, MAX_Y/2-100)
+        self.vel = (9, 0)
 
         #TODO: have only 1 instance of the spritesheet.  use a class variable?
 
@@ -112,6 +114,7 @@ class Ship(pygame.sprite.Sprite):
         if thrust:
             vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.5
             vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.5
+            #set max?
             self.vel = (vel_x, vel_y)
 
         if self.angle >= 360:
@@ -127,37 +130,53 @@ class Ship(pygame.sprite.Sprite):
         if y < 0:       y = MAX_Y
         self.pos = (x, y)
 
-        print self.vel, self.pos
-
         self.image = pygame.transform.rotate(self.image_orig, self.angle)
         self.rect = self.image.get_rect()
         self.rect.center = self.pos
 
+#### class: Shot ############################################################
+class Shot(pygame.sprite.Sprite):
+
+    def __init__(self, pos, angle, speed=40):
+        pygame.sprite.Sprite.__init__(self)
+
+        #draw sprite
+        size = 8
+        self.image = pygame.Surface((size, size))
+        pygame.draw.circle(self.image, (192,  10,  10), (size/2, size/2), size/2)
+        pygame.draw.circle(self.image, (192, 128, 128), (size/2, size/2), size/4)
+        self.rect = self.image.get_rect()
+
+        self.vel = (0, 0)
+        self.pos = pos
+        self.angle = angle
+        self.time_to_live = FPS/2
+
+        vel_x = self.vel[0] + math.cos(math.radians(self.angle))*speed
+        vel_y = self.vel[1] - math.sin(math.radians(self.angle))*speed
+        self.vel = (vel_x, vel_y)
 
 
-def load_image(name, colorkey=None):
-    fullname = os.path.join('assets', name)
-    try:
-        image = pygame.image.load(fullname)
-    except pygame.error, message:
-        print 'Cannot load image:', name
-        raise SystemExit, message
-    image = image.convert()
-    if colorkey is not None:
-        if colorkey is -1:
-            colorkey = image.get_at((0,0))
-        image.set_colorkey(colorkey, RLEACCEL)
-    return image, image.get_rect()
+    def update(self):
+        x = self.pos[0] + self.vel[0]
+        y = self.pos[1] + self.vel[1]
+        if x >= MAX_X:  x = 0
+        if x < 0:       x = MAX_X
+        if y >= MAX_Y:  y = 0
+        if y < 0:       y = MAX_Y
+        self.pos = (x, y)
+
+        self.rect.center = self.pos
+
+        self.time_to_live -= 1
+
+    def is_done(self):
+        return self.time_to_live <= 0
 
 
 def terminate():
     pygame.quit()
     sys.exit()
-
-def advance_frame():
-    #pygame.display.update()
-    pygame.display.flip()
-    FPSCLOCK.tick(FPS)
 
 
 
@@ -173,8 +192,11 @@ a = Asteroid()
 asteroids = pygame.sprite.RenderPlain(a)
 explosions = pygame.sprite.RenderPlain()
 
-s = Ship()
-ships = pygame.sprite.RenderPlain(s)
+ship = Ship()
+ships = pygame.sprite.GroupSingle(ship)
+
+shots = pygame.sprite.RenderPlain()
+
 
 cmd_thrust = False
 cmd_left = False
@@ -192,17 +214,21 @@ while True:
             if event.key == K_UP:    cmd_thrust = True
             if event.key == K_LEFT:  cmd_left = True
             if event.key == K_RIGHT: cmd_right = True
+            if event.key == K_LCTRL:
+                if ship.alive():
+                    sh = Shot(ship.pos, ship.angle)
+                    shots.add(sh)
 
         elif event.type == KEYUP:
             if event.key == K_UP:    cmd_thrust = False
             if event.key == K_LEFT:  cmd_left = False
             if event.key == K_RIGHT: cmd_right = False
 
-            if event.key == K_SPACE:
-                if asteroids:
-                    a = asteroids.sprites()[0]
-                    explosions.add( Explosion(a.pos) )
-                    a.kill()
+            #if event.key == K_SPACE:
+            #    if asteroids:
+            #        a = asteroids.sprites()[0]
+            #        explosions.add( Explosion(a.pos) )
+            #        a.kill()
             if event.key == K_n:
                 asteroids.add( Asteroid() )
             if event.key == K_ESCAPE:
@@ -212,15 +238,34 @@ while True:
     #update game objects
     asteroids.update()
     explosions.update()
-    ships.update(cmd_thrust, cmd_left, cmd_right)
+    shots.update()
+    if ship.alive():
+        ships.update(cmd_thrust, cmd_left, cmd_right)
+
     for exp in explosions.sprites():
         if exp.is_done():
             exp.kill()
+
+    for sh in shots.sprites():
+        if sh.is_done():
+            sh.kill()
+
+    # detect collisions
+    for a in pygame.sprite.spritecollide(ship, asteroids, False):
+        if ship.alive():
+            explosions.add(Explosion(ship.pos))
+            ship.kill()
+
+    for a in pygame.sprite.groupcollide(asteroids, shots, True, True).keys():
+        explosions.add(Explosion(a.pos))
+
+
 
     # draw frame
     DISPLAYSURF.fill(BGCOLOR)
     explosions.draw(DISPLAYSURF)
     asteroids.draw(DISPLAYSURF)
+    shots.draw(DISPLAYSURF)
     ships.draw(DISPLAYSURF)
 
     #advance frame
