@@ -20,7 +20,7 @@ class Paddle(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.load_sprite()
         self.rect = self.image.get_rect()
-        self.rect.y = arena.bottom-50
+        self.rect.y = arena.bottom-80
         self.rect.x = arena.centerx - self.image.get_width()/2
         self.balls_held = []
 
@@ -43,7 +43,7 @@ class Paddle(pygame.sprite.Sprite):
         pass
         return x - self.rect.centerx
 
-    def update(self, arena, cmd_left, cmd_right):
+    def update(self, arena):
         self.rect.centerx = pygame.mouse.get_pos()[0]
         self.rect.clamp_ip(arena)
 
@@ -95,6 +95,7 @@ class Ball(pygame.sprite.Sprite):
 
     def update(self, arena):
         self.rect.move_ip( self.vel_x, self.vel_y )
+        self.rect.clamp_ip(arena)
 
 #### class: Block ######################################################################
 class Block(pygame.sprite.Sprite):
@@ -131,9 +132,9 @@ def terminate():
 def generate_level(arena, level):
         sprites = []
         for i in range(2, 13):
-            sprites.append( Block(arena, (i, 3), (255,40,40)) )
-            sprites.append( Block(arena, (i, 4), (40,255,40)) )
-            sprites.append( Block(arena, (i, 5), (40,40,255)) )
+            sprites.append( Block(arena, (i, 4), (255,40,40)) )
+            sprites.append( Block(arena, (i, 5), (40,255,40)) )
+            sprites.append( Block(arena, (i, 6), (40,40,255)) )
         return sprites
         #return []
 
@@ -146,19 +147,18 @@ BASICFONT = pygame.font.SysFont('arial', 15)
 pygame.display.set_caption('pyGame Template')
 random.seed()
 
+score = 0
+lives = 2
+level = 1
+
 #create sprites and groups
 arena_rect = pygame.Rect(20, 20, 15 * Block.WIDTH, MAX_Y)
 paddle = pygame.sprite.GroupSingle( Paddle(arena_rect) )
 balls = pygame.sprite.RenderPlain( Ball(arena_rect.center) )
-l = generate_level(arena_rect, 1)
-blocks = pygame.sprite.RenderPlain( l )
+blocks = pygame.sprite.RenderPlain()
 
-cmd_left = False
-cmd_right = False
-
-score = 0
-lives = 2
-level = 1
+l = generate_level(arena_rect, level)
+blocks.add(l)
 
 while True:
 
@@ -179,7 +179,7 @@ while True:
 
 
     #update game state
-    paddle.update(arena_rect, cmd_left, cmd_right)
+    paddle.update(arena_rect)
     balls.update(arena_rect)
     blocks.update()
 
@@ -198,34 +198,37 @@ while True:
     # detect collisions with blocks
     for ball in balls.sprites():
         blocks_collided = pygame.sprite.spritecollide(ball, blocks, False)
-        left = right = up = down = 0
-        orig_rect = ball.rect
-        for b in blocks_collided:
-            # block = []  ball = ()
 
-            # ([)]
-            if orig_rect.left < b.rect.left < orig_rect.right < b.rect.right:
-                ball.rect.right = b.rect.left
-                left = -1
+        if blocks_collided:
+            orig_rect = ball.rect
+            left = right = up = down = 0
+            for b in blocks_collided:
+                # block = []  ball = ()
 
-            # [(])
-            if b.rect.left < orig_rect.left < b.rect.right < orig_rect.right:
-                ball.rect.left = b.rect.right
-                right = 1
+                # ([)]
+                if orig_rect.left < b.rect.left < orig_rect.right < b.rect.right:
+                    ball.rect.right = b.rect.left
+                    left = -1
 
-            # top ([)] bottom
-            if orig_rect.top < b.rect.top < orig_rect.bottom < b.rect.bottom:
-                ball.rect.bottom = b.rect.top
-                up = -1
+                # [(])
+                if b.rect.left < orig_rect.left < b.rect.right < orig_rect.right:
+                    ball.rect.left = b.rect.right
+                    right = 1
 
-            # top [(]) bottom
-            if b.rect.top < orig_rect.top < b.rect.bottom < orig_rect.bottom:
-                ball.rect.top = b.rect.bottom
-                down = 1
+                # top ([)] bottom
+                if orig_rect.top < b.rect.top < orig_rect.bottom < b.rect.bottom:
+                    ball.rect.bottom = b.rect.top
+                    up = -1
 
-            b.kill()
-            score += 10
+                # top [(]) bottom
+                if b.rect.top < orig_rect.top < b.rect.bottom < orig_rect.bottom:
+                    ball.rect.top = b.rect.bottom
+                    down = 1
 
+                b.kill()
+                score += 10
+
+            #print left, up, right, down
             if (left + right ) != 0:
                 ball.vel_x = (left + right)*abs(ball.vel_x)
             if (up + down) != 0:
@@ -247,7 +250,7 @@ while True:
         balls.empty()
         balls.add( Ball(arena_rect.center) )
         blocks.empty()
-        generate_level(arena_rect, level)
+        blocks.add( generate_level(arena_rect, level) )
 
 
     # draw frame
