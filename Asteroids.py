@@ -16,22 +16,17 @@ BGCOLOR   = BLACK
 #### Class: Asteroid ########################################################
 class Asteroid(pygame.sprite.Sprite):
 
-    ast_spritesheet = None
-    ast_img = []
-    pos = (0, 0)
-    vel = (0, 0)
-    frame = 0
-
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
-        self.pos = (random.randint(48, MAX_X-48), random.randint(48, MAX_Y-48))
-        s = random.randint(3, 10)
-        self.vel = (random.randint(-s, s), random.randint(-s, s))
-        #self.pos = (MAX_X/2-100, MAX_Y/2-100)
-        #self.vel = (9, 0)
+        side = random.randint(1, 4)
+        if side == 1:    self.pos = (random.randint(0, MAX_X), 0)
+        elif side == 2:  self.pos = (0, random.randint(0, MAX_Y))
+        elif side == 3:  self.pos = (random.randint(0, MAX_X), MAX_Y)
+        elif side == 4:  self.pos = (MAX_X, random.randint(0, MAX_Y))
 
-        #TODO: have only 1 instance of the spritesheet.  use a class variable?
+        s = random.randint(3, 6)
+        self.vel = (random.randint(-s, s), random.randint(-s, s))
 
         #load asteroid sprite
         self.ast_spritesheet = pygame.image.load('assets/asteroid2.png').convert_alpha()
@@ -97,16 +92,18 @@ class Ship(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.pos = (MAX_X/2, MAX_Y/2)
-        self.angle = 0
-        self.vel = (0, 0)
-        #self.image_orig, self.rect = load_image("ship1_32x32.png")
-
+        self.reset()
         self.image_orig = pygame.image.load('assets/ship1_32x32.png').convert_alpha()
         self.rect = self.image_orig.get_rect()
 
         self.rect.center = self.pos
         self.image = self.image_orig
+
+    def reset(self):
+        self.pos = (MAX_X/2, MAX_Y/2)
+        self.angle = 90
+        self.vel = (0, 0)
+ 
 
     def update(self, thrust, left, right):
         if left:
@@ -197,14 +194,17 @@ asteroids = pygame.sprite.RenderPlain(a)
 explosions = pygame.sprite.RenderPlain()
 
 ship = Ship()
-ships = pygame.sprite.GroupSingle(ship)
+ships = pygame.sprite.RenderPlain(ship)
 
 shots = pygame.sprite.RenderPlain()
 
-
+score = 0
+level = 1
+lives = 2
 cmd_thrust = False
 cmd_left = False
 cmd_right = False
+delay_game = 0
 
 #main game loop
 while True:
@@ -228,16 +228,10 @@ while True:
             if event.key == K_LEFT:  cmd_left = False
             if event.key == K_RIGHT: cmd_right = False
 
-            #if event.key == K_SPACE:
-            #    if asteroids:
-            #        a = asteroids.sprites()[0]
-            #        explosions.add( Explosion(a.pos) )
-            #        a.kill()
             if event.key == K_n:
                 asteroids.add( Asteroid() )
             if event.key == K_ESCAPE:
                 terminate()
-
 
     #update game objects
     asteroids.update()
@@ -262,6 +256,7 @@ while True:
 
     for a in pygame.sprite.groupcollide(asteroids, shots, True, True).keys():
         explosions.add(Explosion(a.pos))
+        score += 10
 
 
 
@@ -271,6 +266,27 @@ while True:
     asteroids.draw(DISPLAYSURF)
     shots.draw(DISPLAYSURF)
     ships.draw(DISPLAYSURF)
+
+    msg = "LEVEL: %d   SCORE: %d    LIVES: %d"%(level, score, lives)
+    msg_disp = BASICFONT.render(msg, True, WHITE, BLACK)
+    DISPLAYSURF.blit(msg_disp, (10, 10))
+
+
+    if len(asteroids) == 0 and len(explosions) == 0:
+        level += 1
+        ship.reset()
+        for i in range (0, level):
+            asteroids.add( Asteroid() )
+        delay_game = FPS*2
+
+    if len(ships) == 0 and len(explosions) == 0 and lives > 0:
+        lives -= 1
+        ship = Ship()
+        ships.add(ship)
+        delay_game = FPS*2
+
+    if delay_game > 0:
+        delay_game -= 1
 
     #advance frame
     #pygame.display.update()
