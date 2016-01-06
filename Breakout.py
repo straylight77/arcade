@@ -241,22 +241,22 @@ while True:
 
                 # ([)]
                 if orig_rect.left < b.rect.left < orig_rect.right < b.rect.right:
-                    ball.rect.right = b.rect.left
+                    #ball.rect.right = b.rect.left
                     left = -1
 
                 # [(])
                 if b.rect.left < orig_rect.left < b.rect.right < orig_rect.right:
-                    ball.rect.left = b.rect.right
+                    #ball.rect.left = b.rect.right
                     right = 1
 
                 # top ([)] bottom
                 if orig_rect.top < b.rect.top < orig_rect.bottom < b.rect.bottom:
-                    ball.rect.bottom = b.rect.top
+                    #ball.rect.bottom = b.rect.top
                     up = -1
 
                 # top [(]) bottom
                 if b.rect.top < orig_rect.top < b.rect.bottom < orig_rect.bottom:
-                    ball.rect.top = b.rect.bottom
+                    #ball.rect.top = b.rect.bottom
                     down = 1
 
                 b.kill()
