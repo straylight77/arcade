@@ -10,6 +10,7 @@ BLACK     = (  0,   0,   0)
 GRAY      = (128, 128, 128)
 DARKGRAY  = ( 40,  40,  40)
 RED       = (255,  40,  40)
+ORANGE    = (255, 128,  40)
 BGCOLOR = BLACK
 
 
@@ -143,7 +144,7 @@ def generate_level(arena, level):
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
 DISPLAYSURF = pygame.display.set_mode((MAX_X, MAX_Y))
-BASICFONT = pygame.font.SysFont('arial', 15)
+BASICFONT = pygame.font.SysFont('courier', 25, True)
 pygame.display.set_caption('pyGame Template')
 random.seed()
 
@@ -159,6 +160,15 @@ blocks = pygame.sprite.RenderPlain()
 
 l = generate_level(arena_rect, level)
 blocks.add(l)
+
+right_margin_center = (MAX_X - arena_rect.right)/2 + arena_rect.right
+
+score_title_img = BASICFONT.render("SCORE", True, ORANGE, BGCOLOR)
+score_title_x = right_margin_center - score_title_img.get_width()/2
+lives_title_img = BASICFONT.render("LIVES", True, ORANGE, BGCOLOR)
+lives_title_x = right_margin_center - lives_title_img.get_width()/2
+level_title_img = BASICFONT.render("LEVEL", True, ORANGE, BGCOLOR)
+level_title_x = right_margin_center - level_title_img.get_width()/2
 
 while True:
 
@@ -253,11 +263,29 @@ while True:
         blocks.add( generate_level(arena_rect, level) )
 
 
+
     # draw frame
     DISPLAYSURF.fill(BGCOLOR)
     paddle.draw(DISPLAYSURF)
     balls.draw(DISPLAYSURF)
     blocks.draw(DISPLAYSURF)
+
+    level_img = BASICFONT.render("%d"%(level), True, WHITE, BGCOLOR)
+    x = right_margin_center - level_img.get_width()/2
+    DISPLAYSURF.blit(level_title_img, (level_title_x, 200))
+    DISPLAYSURF.blit(level_img, (x, 230))
+
+    score_img = BASICFONT.render("%d"%(score), True, WHITE, BGCOLOR)
+    x = right_margin_center - score_img.get_width()/2
+    DISPLAYSURF.blit(score_title_img, (score_title_x, 300))
+    DISPLAYSURF.blit(score_img, (x, 330))
+
+    lives_img = BASICFONT.render("%d"%(lives), True, WHITE, BGCOLOR)
+    x = right_margin_center - lives_img.get_width()/2
+    DISPLAYSURF.blit(lives_title_img, (lives_title_x, 400))
+    DISPLAYSURF.blit(lives_img, (x, 430))
+
+
 
     pygame.draw.rect(DISPLAYSURF, RED, arena_rect, 1)
     #pygame.display.update()
