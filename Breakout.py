@@ -100,7 +100,7 @@ class Ball(pygame.sprite.Sprite):
         self.rect.clamp_ip(arena)
 
 
-#### class: Block ######################################################################
+#### class: Block ###########################################################
 class Block(pygame.sprite.Sprite):
 
     WIDTH = 32
@@ -253,7 +253,8 @@ while True:
 
     if not balls:
         if lives == 0:
-            highscore = score
+            if score > highscore:
+                highscore = score
             score = 0
             lives = 2
             level = 1
