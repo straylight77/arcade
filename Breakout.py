@@ -48,6 +48,7 @@ class Paddle(pygame.sprite.Sprite):
         self.rect.centerx = pygame.mouse.get_pos()[0]
         self.rect.clamp_ip(arena)
 
+
 #### class: Ball ############################################################
 class Ball(pygame.sprite.Sprite):
 
@@ -98,6 +99,7 @@ class Ball(pygame.sprite.Sprite):
         self.rect.move_ip( self.vel_x, self.vel_y )
         self.rect.clamp_ip(arena)
 
+
 #### class: Block ######################################################################
 class Block(pygame.sprite.Sprite):
 
@@ -140,6 +142,7 @@ def generate_level(arena, level):
         #return []
 
 
+
 #### main ###############################################
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
@@ -151,6 +154,7 @@ random.seed()
 score = 0
 lives = 2
 level = 1
+highscore = 0
 
 #create sprites and groups
 arena_rect = pygame.Rect(20, 20, 15 * Block.WIDTH, MAX_Y)
@@ -169,6 +173,8 @@ lives_title_img = BASICFONT.render("LIVES", True, ORANGE, BGCOLOR)
 lives_title_x = right_margin_center - lives_title_img.get_width()/2
 level_title_img = BASICFONT.render("LEVEL", True, ORANGE, BGCOLOR)
 level_title_x = right_margin_center - level_title_img.get_width()/2
+highscore_title_img = BASICFONT.render("HIGH SCORE", True, ORANGE, BGCOLOR)
+highscore_title_x = right_margin_center - highscore_title_img.get_width()/2
 
 while True:
 
@@ -247,12 +253,17 @@ while True:
 
     if not balls:
         if lives == 0:
-            gameover = True
-            print "GAMEOVER!"
+            highscore = score
+            score = 0
+            lives = 2
+            level = 1
+            l = generate_level(arena_rect, level)
+            blocks.add(l)
+            balls = pygame.sprite.RenderPlain( Ball(arena_rect.center) )
+
         else:
             lives -= 1
             balls.add( Ball(arena_rect.center) )
-            print "lives: ", lives
 
     if not blocks:
         level += 1
@@ -285,7 +296,10 @@ while True:
     DISPLAYSURF.blit(lives_title_img, (lives_title_x, 400))
     DISPLAYSURF.blit(lives_img, (x, 430))
 
-
+    highscore_img = BASICFONT.render("%d"%(highscore), True, WHITE, BGCOLOR)
+    x = right_margin_center - highscore_img.get_width()/2
+    DISPLAYSURF.blit(highscore_title_img, (highscore_title_x, 500))
+    DISPLAYSURF.blit(highscore_img, (x, 530))
 
     pygame.draw.rect(DISPLAYSURF, RED, arena_rect, 1)
     #pygame.display.update()
