@@ -168,6 +168,7 @@ DISPLAYSURF = pygame.display.set_mode((MAX_X, MAX_Y))
 BASICFONT = pygame.font.SysFont('courier', 25, True)
 pygame.display.set_caption('pyGame Template')
 random.seed()
+pygame.mouse.set_visible(False)
 
 score = 0
 lives = 2
@@ -201,8 +202,8 @@ while True:
         if event.type == QUIT:
             terminate()
 
-        elif event.type == KEYDOWN:
-            if event.key == K_SPACE:
+        elif event.type == MOUSEBUTTONUP:
+            if event.button == 1:
                 for ball in balls:
                     if ball.paddle:
                         ball.unstick_from_paddle()
