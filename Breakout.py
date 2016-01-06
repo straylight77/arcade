@@ -52,14 +52,17 @@ class Paddle(pygame.sprite.Sprite):
 #### class: Ball ############################################################
 class Ball(pygame.sprite.Sprite):
 
-    def __init__(self, pos):
+    def __init__(self, paddle = None):
         pygame.sprite.Sprite.__init__(self)
         self.load_sprite()
         self.rect = self.image.get_rect()
-        self.rect.center = pos
 
+        #self.rect.center = pos
+        self.rect.center = (paddle.rect.centerx, paddle.rect.top-8)
+
+        self.paddle = paddle
+        self.paddle_pos = 10
         self.set_velocity(300, 6)
-        self.caught = False
         self.dead = False
 
     def load_sprite(self):
@@ -95,9 +98,24 @@ class Ball(pygame.sprite.Sprite):
         self.vel_x = self.speed * math.cos(rad)
         self.vel_y = self.speed * math.sin(rad)
 
+    def stick_to_paddle(self, paddle):
+        self.paddle = paddle
+        self.paddle_pos = self.rect.centerx - paddle.rect.centerx
+        self.vel_x = 0
+        self.vel_y = 0
+
+    def unstick_from_paddle(self):
+        self.bounce_paddle(self.paddle)
+        self.paddle = None
+
+
     def update(self, arena):
-        self.rect.move_ip( self.vel_x, self.vel_y )
-        self.rect.clamp_ip(arena)
+        if self.paddle:
+            self.rect.centerx = self.paddle.rect.centerx + self.paddle_pos
+        else:
+            self.rect.move_ip( self.vel_x, self.vel_y )
+            self.rect.clamp_ip(arena)
+
 
 
 #### class: Block ###########################################################
@@ -159,7 +177,7 @@ highscore = 0
 #create sprites and groups
 arena_rect = pygame.Rect(20, 20, 15 * Block.WIDTH, MAX_Y)
 paddle = pygame.sprite.GroupSingle( Paddle(arena_rect) )
-balls = pygame.sprite.RenderPlain( Ball(arena_rect.center) )
+balls = pygame.sprite.RenderPlain( Ball(paddle.sprite) )
 blocks = pygame.sprite.RenderPlain()
 
 l = generate_level(arena_rect, level)
@@ -185,9 +203,9 @@ while True:
 
         elif event.type == KEYDOWN:
             if event.key == K_SPACE:
-                for ball in paddle.sprite.balls_held:
-                    ball.bounce_paddle(paddle.sprite)
-                    paddle.sprite.throw_ball(ball)
+                for ball in balls:
+                    if ball.paddle:
+                        ball.unstick_from_paddle()
 
         elif event.type == KEYUP:
             if event.key == K_ESCAPE:
@@ -202,9 +220,8 @@ while True:
     # detect collisions with paddle
     for ball in pygame.sprite.spritecollide(paddle.sprite, balls, 0):
         ball.bounce_paddle(paddle.sprite)
-        #ball.vel_x = 0
-        #ball.vel_y = 0
-        #paddle.sprite.catch_ball(ball)
+        #ball.stick_to_paddle(paddle.sprite)
+
 
     # detect collisions with walls
     for ball in balls.sprites():
@@ -260,17 +277,17 @@ while True:
             level = 1
             l = generate_level(arena_rect, level)
             blocks.add(l)
-            balls = pygame.sprite.RenderPlain( Ball(arena_rect.center) )
+            balls = pygame.sprite.RenderPlain( Ball(paddle.sprite) )
 
         else:
             lives -= 1
-            balls.add( Ball(arena_rect.center) )
+            balls.add( Ball(paddle.sprite) )
 
     if not blocks:
         level += 1
         score += level*100
         balls.empty()
-        balls.add( Ball(arena_rect.center) )
+        balls.add( Ball(paddle.sprite) )
         blocks.empty()
         blocks.add( generate_level(arena_rect, level) )
 
