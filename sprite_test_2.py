@@ -19,45 +19,78 @@ BGCOLOR = BLACK
 
 #---- class: Spritesheet -------------------------------------------------
 class Spritesheet():
-    def __init__(self):
-        filename = 'assets/asteroid2.png'
-        self.sheet = pygame.image.load(filename)
-        self.decompose()
+    """
+    Helper class to manage loading sprite sheet image files, slicing
+    them up into frames.  Ensures only one copy exists in memory.
+    """
 
-    def decompose(self):
-        self.images = []
+    sprites = { }
+    sheet1 = None
+    sheet2 = None
+
+    def __init__(self):
+        self.load_asteroid_sprites()
+        self.load_explosion_sprites()
+
+    def load_asteroid_sprites(self):
+        self.sheet1 = pygame.image.load('assets/asteroid2.png')
+        images = []
         s = 64
         for y in range(0,6):
             for x in range (0, 5):
-                img = self.sheet.subsurface((x*s, y*s, s, s))
-                self.images.append(img)
+                img = self.sheet1.subsurface((x*s, y*s, s, s))
+                images.append(img)
+        self.sprites['asteroid'] = images
 
-    def get_sprite(self, index):
-        return self.images[index]
+
+    def load_explosion_sprites(self):
+        self.sheet2 = pygame.image.load('assets/explosion1_64x64.png')
+        images = []
+        s = 64
+        for y in range(0, 5):
+            for x in range (0, 5):
+                img = self.sheet2.subsurface((x*s, y*s, s, s))
+                images.append(img)
+        self.sprites['explosion'] = images
+
+    def get_sprites(self, name):
+        return self.sprites[name]
 
 
 
 #---- class: AnimatedSprite ----------------------------------------------
 class AnimatedSprite(pygame.sprite.Sprite):
 
-    sheet = None
+    frames = None  #list of ordered images used for animation
+    repeat = True  #loop through frames or stop at the last one?
 
     @classmethod
-    def set_spritesheet(cls, spritesheet):
-        cls.sheet = spritesheet
+    def set_frames(cls, frame_images):
+        cls.frames = frame_images
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.index = 0
-        self.image = self.sheet.get_sprite(0)
+        self.image = self.frames[self.index]
         self.rect = self.image.get_rect()
 
+    def advance_frame(self, increment = 1):
+        self.index += increment
+        max_index = len(self.frames)-1
+        if self.index > max_index:
+            if self.repeat:
+                self.index = 0
+            else:
+                self.index = max_index
+
+    def is_done(self):
+        return not self.repeat and self.index >= len(self.frames)-1
 
     def update(self, frames = 1):
-        self.index += frames
-        if self.index >= len(self.sheet.images):
-            self.index = 0
-        self.image = self.sheet.get_sprite(self.index)
+        self.advance_frame(frames)
+        self.image = self.frames[self.index]
+        if self.is_done():
+            self.kill()
 
 
 #---- class: Asteroid ----------------------------------------------------
@@ -69,10 +102,72 @@ class Asteroid(AnimatedSprite):
         self.index = index
         self.vel = [0, 0]
 
-
     def update(self):
         AnimatedSprite.update(self)
         self.rect.center = self.pos
+
+
+#---- class: Explosion ---------------------------------------------------
+class Explosion(AnimatedSprite):
+
+    def __init__(self, pos):
+        AnimatedSprite.__init__(self)
+        self.repeat = False
+        self.pos = pos
+        self.rect.center = pos
+
+
+#---- class: Game --------------------------------------------------------
+class Game():
+
+    max_x = 0
+    max_y = 0
+    gameover = False
+    display = None
+    clock = None
+
+    def __init__(self, display, clock):
+        self.display = display
+        self.clock = clock
+
+        self.sheet = Spritesheet()
+        Asteroid.set_frames( self.sheet.sprites['asteroid'] )
+        Explosion.set_frames( self.sheet.get_sprites('explosion') )
+
+        self.grp = pygame.sprite.RenderPlain()
+        self.create_level()
+
+    def create_level(self):
+        self.grp.add( Asteroid([MAX_X/2, MAX_Y/2]) )
+        self.grp.add( Asteroid([MAX_X/2+65, MAX_Y/2], 15) )
+        self.grp.add( Explosion([MAX_X/2, MAX_Y/2+65]) )
+
+
+    def main_loop(self):
+        while not self.gameover:
+            self.handle_events()
+            self.update()
+            self.draw()
+            self.clock.tick(FPS)
+
+    def update(self):
+        self.grp.update()
+
+    def draw(self):
+        self.display.fill(BGCOLOR)
+        self.grp.draw(self.display)
+        pygame.display.update()
+
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+
+            elif event.type == KEYUP:
+                if event.key == K_ESCAPE:
+                    #terminate()
+                    self.gameover = True
 
 
 ##### functions ##########################################################
@@ -80,40 +175,38 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+
+def init(max_x, max_y, title = 'pyGame Template'):
+    pygame.init()
+    clk = pygame.time.Clock()
+    disp = pygame.display.set_mode((max_x, max_y))
+    pygame.display.set_caption(title)
+    random.seed()
+    return disp, clk
+
+
+
 #---- main() -------------------------------------------------------------
 def main():
     #init pygame
-    pygame.init()
-    CLOCK = pygame.time.Clock()
-    DISPLAY = pygame.display.set_mode((MAX_X, MAX_Y))
+
+    DISPLAY, CLOCK = init(MAX_X, MAX_Y)
     FONT1 = pygame.font.SysFont('courier', 15)
-    pygame.display.set_caption('pyGame Template')
-    random.seed()
-
-    s = Spritesheet()
-    AnimatedSprite.set_spritesheet(s)
-    print len(s.images)
-
-    grp = pygame.sprite.RenderPlain()
-    grp.add( Asteroid([MAX_X/2, MAX_Y/2]) )
-    grp.add( Asteroid([MAX_X/2+65, MAX_Y/2], 15) )
 
     #main game loop
     while True:
-        #event handling
         for event in pygame.event.get():
             if event.type == QUIT:
                 terminate()
             elif event.type == KEYUP:
                 if event.key == K_ESCAPE:
                     terminate()
+                if event.key == K_SPACE:
+                    g = Game(DISPLAY, CLOCK)
+                    g.main_loop()
 
-        #update game state
-        grp.update()
-
-        # draw frame
+        # draw main screen
         DISPLAY.fill(BGCOLOR)
-        grp.draw(DISPLAY)
         pygame.display.update()
         CLOCK.tick(FPS)
 
