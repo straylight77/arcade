@@ -2,39 +2,39 @@ import pygame, sys, math, random
 from pygame.locals import *
 
 FPS = 30
-MAX_X = 600
+MAX_X = 800
 MAX_Y = 600
 
 WHITE     = (255, 255, 255)
-BLACK     = (  0,   0,   0)
 GRAY      = (128, 128, 128)
 DARKGRAY  = ( 40,  40,  40)
-RED       = (255,  40,  40)
-BGCOLOR   = BLACK
+BLACK     = (  0,   0,   0)
+RED       = (255,   0,   0)
+ORANGE    = (255, 128,   0)
+YELLOW    = (255, 255,   0)
+GREEN     = (40,  255,   0)
+BLUE      = ( 0,    0, 255)
+VIOLET    = (255,   0, 255)
+BGCOLOR = BLACK
 
 
-pygame.init()
-FPSCLOCK = pygame.time.Clock()
-DISPLAYSURF = pygame.display.set_mode((MAX_X, MAX_Y))
-BASICFONT = pygame.font.SysFont('courier', 15)
-pygame.display.set_caption('pyGame Template')
-random.seed()
 
 
 def terminate():
     pygame.quit()
     sys.exit()
 
-def advance_frame():
-    pygame.display.update()
-    FPSCLOCK.tick(FPS)
-
-def handle_events():
-    pass
-
 
 def main():
+    #init pygame
+    pygame.init()
+    CLOCK = pygame.time.Clock()
+    DISPLAY = pygame.display.set_mode((MAX_X, MAX_Y))
+    FONT1 = pygame.font.SysFont('courier', 15)
+    pygame.display.set_caption('pyGame Template')
+    random.seed()
 
+    #main game loop
     while True:
         #event handling
         for event in pygame.event.get():
@@ -46,10 +46,11 @@ def main():
 
 
         # draw frame
-        DISPLAYSURF.fill(BGCOLOR)
+        DISPLAY.fill(BGCOLOR)
 
+        pygame.display.update()
+        CLOCK.tick(FPS)
 
-        advance_frame()
 
     terminate()
 
