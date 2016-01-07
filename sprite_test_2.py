@@ -34,6 +34,8 @@ class Spritesheet():
 
     def load_asteroid_sprites(self):
         self.sheet1 = pygame.image.load('assets/asteroid2.png')
+        #self.sprites['asteroid'] = self._extract_sprites(self.sheet1, 64, 6, 5)
+
         images = []
         s = 64
         for y in range(0,6):
@@ -52,6 +54,15 @@ class Spritesheet():
                 img = self.sheet2.subsurface((x*s, y*s, s, s))
                 images.append(img)
         self.sprites['explosion'] = images
+
+    def _extract_sprites(sheet, size, rows, columns):
+        images = []
+        for y in range(0, rows):
+            for x in range (0, columns):
+                rect = (x*size, y*size, size, size)
+                img = self.sheet2.subsurface(rect)
+                images.append(img)
+
 
     def get_sprites(self, name):
         return self.sprites[name]
@@ -96,15 +107,32 @@ class AnimatedSprite(pygame.sprite.Sprite):
 #---- class: Asteroid ----------------------------------------------------
 class Asteroid(AnimatedSprite):
 
-    def __init__(self, pos = [0,0], index = 0):
+    def __init__(self, pos=[0,0], vel=[0,0]):
         AnimatedSprite.__init__(self)
         self.pos = pos
-        self.index = index
-        self.vel = [0, 0]
+        self.vel = vel
+        self.index = 0
 
     def update(self):
         AnimatedSprite.update(self)
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+        print self.pos, self.vel
+        self.check_boundry()
         self.rect.center = self.pos
+
+    def check_boundry(self):
+        if self.pos[0] > MAX_X:
+            self.pos[0] = 0
+        if self.pos[0] < 0:
+            self.pos[0] = MAX_X
+
+        if self.pos[1] > MAX_Y:
+            self.pos[1] = 0
+        if self.pos[1] < 0:
+            self.pos[1] = MAX_Y
+
+
 
 
 #---- class: Explosion ---------------------------------------------------
@@ -122,40 +150,46 @@ class Game():
 
     max_x = 0
     max_y = 0
-    gameover = False
     display = None
     clock = None
+    gameover = False
+    level = 1
+    score = 0
+    lives = 2
 
     def __init__(self, display, clock):
         self.display = display
         self.clock = clock
+        self.max_x = self.display.get_width()
+        self.max_y = self.display.get_height()
 
-        self.sheet = Spritesheet()
-        Asteroid.set_frames( self.sheet.sprites['asteroid'] )
-        Explosion.set_frames( self.sheet.get_sprites('explosion') )
-
-        self.grp = pygame.sprite.RenderPlain()
+        self.asteroids = pygame.sprite.RenderPlain()
         self.create_level()
 
     def create_level(self):
-        self.grp.add( Asteroid([MAX_X/2, MAX_Y/2]) )
-        self.grp.add( Asteroid([MAX_X/2+65, MAX_Y/2], 15) )
-        self.grp.add( Explosion([MAX_X/2, MAX_Y/2+65]) )
+        for i in range(0, self.level):
+            pos_x = random.randint(0, self.max_x)
+            a = Asteroid([pos_x, 0], [3,4])
+            self.asteroids.add(a)
 
 
     def main_loop(self):
         while not self.gameover:
             self.handle_events()
             self.update()
+            self.detect_collisions()
             self.draw()
             self.clock.tick(FPS)
 
     def update(self):
-        self.grp.update()
+        self.asteroids.update()
+
+    def detect_collisions(self):
+        pass
 
     def draw(self):
         self.display.fill(BGCOLOR)
-        self.grp.draw(self.display)
+        self.asteroids.draw(self.display)
         pygame.display.update()
 
 
@@ -166,8 +200,10 @@ class Game():
 
             elif event.type == KEYUP:
                 if event.key == K_ESCAPE:
-                    #terminate()
+                    terminate()
+                elif event.key == K_q:
                     self.gameover = True
+
 
 
 ##### functions ##########################################################
@@ -193,6 +229,13 @@ def main():
     DISPLAY, CLOCK = init(MAX_X, MAX_Y)
     FONT1 = pygame.font.SysFont('courier', 15)
 
+    sheet = Spritesheet()
+    Asteroid.set_frames( sheet.sprites['asteroid'] )
+    Explosion.set_frames( sheet.get_sprites('explosion') )
+
+    splash_grp = pygame.sprite.RenderPlain()
+    splash_grp.add (Asteroid( [MAX_X/2.0, MAX_Y/2.0], [3.5,4.5] ))
+
     #main game loop
     while True:
         for event in pygame.event.get():
@@ -201,12 +244,15 @@ def main():
             elif event.type == KEYUP:
                 if event.key == K_ESCAPE:
                     terminate()
-                if event.key == K_SPACE:
+                if event.key == K_n:
                     g = Game(DISPLAY, CLOCK)
                     g.main_loop()
 
+        splash_grp.update()
+
         # draw main screen
         DISPLAY.fill(BGCOLOR)
+        splash_grp.draw(DISPLAY)
         pygame.display.update()
         CLOCK.tick(FPS)
 
