@@ -6,11 +6,15 @@ MAX_X = 800
 MAX_Y = 600
 
 WHITE     = (255, 255, 255)
-BLACK     = (  0,   0,   0)
 GRAY      = (128, 128, 128)
 DARKGRAY  = ( 40,  40,  40)
-RED       = (255,  40,  40)
-ORANGE    = (255, 128,  40)
+BLACK     = (  0,   0,   0)
+RED       = (255,   0,   0)
+ORANGE    = (255, 128,   0)
+YELLOW    = (255, 255,   0)
+GREEN     = (40,  255,   0)
+BLUE      = ( 0,    0, 255)
+VIOLET    = (255,   0, 255)
 BGCOLOR = BLACK
 
 
@@ -40,8 +44,8 @@ class Paddle(pygame.sprite.Sprite):
         self.balls_held.remove(sprite)
 
     def dist_from_middle(self, x):
-        """returns the number of pixels from the center of the paddle along x-axis"""
-        pass
+        """returns the number of pixels from the center of the paddle along
+        x-axis"""
         return x - self.rect.centerx
 
     def update(self, arena):
@@ -66,10 +70,10 @@ class Ball(pygame.sprite.Sprite):
         self.dead = False
 
     def load_sprite(self):
-        self.image = pygame.Surface((16, 16))
+        self.image = pygame.Surface((12, 12))
         self.image.fill(WHITE)
         self.image.set_colorkey(WHITE)
-        pygame.draw.circle(self.image, GRAY, (8, 8), 8)
+        pygame.draw.circle(self.image, GRAY, (6, 6), 6)
 
     def bounce_paddle(self, sprite):
         pct = (self.rect.centerx - sprite.rect.centerx) / (float(sprite.rect.width) / 2.0)
@@ -152,10 +156,13 @@ def terminate():
 
 def generate_level(arena, level):
         sprites = []
-        for i in range(2, 13):
-            sprites.append( Block(arena, (i, 4), (255,40,40)) )
-            sprites.append( Block(arena, (i, 5), (40,255,40)) )
-            sprites.append( Block(arena, (i, 6), (40,40,255)) )
+        for i in range(1, 15):
+            sprites.append( Block(arena, (i, 4), RED) )
+            sprites.append( Block(arena, (i, 5), ORANGE) )
+            sprites.append( Block(arena, (i, 6), YELLOW) )
+            sprites.append( Block(arena, (i, 7), GREEN) )
+            sprites.append( Block(arena, (i, 8), BLUE) )
+            sprites.append( Block(arena, (i, 9), VIOLET) )
         return sprites
         #return []
 
@@ -176,7 +183,7 @@ level = 1
 highscore = 0
 
 #create sprites and groups
-arena_rect = pygame.Rect(20, 20, 15 * Block.WIDTH, MAX_Y)
+arena_rect = pygame.Rect(20, 20, 16 * Block.WIDTH, MAX_Y)
 paddle = pygame.sprite.GroupSingle( Paddle(arena_rect) )
 balls = pygame.sprite.RenderPlain( Ball(paddle.sprite) )
 blocks = pygame.sprite.RenderPlain()
@@ -241,22 +248,22 @@ while True:
 
                 # ([)]
                 if orig_rect.left < b.rect.left < orig_rect.right < b.rect.right:
-                    #ball.rect.right = b.rect.left
+                    ball.rect.right = b.rect.left
                     left = -1
 
                 # [(])
                 if b.rect.left < orig_rect.left < b.rect.right < orig_rect.right:
-                    #ball.rect.left = b.rect.right
+                    ball.rect.left = b.rect.right
                     right = 1
 
                 # top ([)] bottom
                 if orig_rect.top < b.rect.top < orig_rect.bottom < b.rect.bottom:
-                    #ball.rect.bottom = b.rect.top
+                    ball.rect.bottom = b.rect.top
                     up = -1
 
                 # top [(]) bottom
                 if b.rect.top < orig_rect.top < b.rect.bottom < orig_rect.bottom:
-                    #ball.rect.top = b.rect.bottom
+                    ball.rect.top = b.rect.bottom
                     down = 1
 
                 b.kill()
