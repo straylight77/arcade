@@ -24,6 +24,7 @@ class Paddle(pygame.sprite.Sprite):
         self.score = 0
         self.rect.center = pos
         self.cmd = [0, 0] # [up, down]
+        self.speed = 8
 
     def load_sprite(self, color):
         self.image = pygame.Surface((16, 80))
@@ -48,7 +49,7 @@ class Paddle(pygame.sprite.Sprite):
             self.cmd[i] = 0
 
     def update(self):
-        dy = (self.cmd[1] - self.cmd[0]) * 8
+        dy = (self.cmd[1] - self.cmd[0]) * self.speed
         self.rect.move_ip(0, dy)
         if self.rect.top < 0:
             self.rect.top = 0
@@ -61,10 +62,14 @@ class Paddle(pygame.sprite.Sprite):
 #---- class: Ball --------------------------------------------------------
 class Ball(pygame.sprite.Sprite):
 
-    def __init__(self):
+    def __init__(self, vel = None, pos = None):
         pygame.sprite.Sprite.__init__(self)
-        self.pos = [MAX_X/2, MAX_Y/2]
-        self.vel = [3, 4]
+        if pos == None:
+            pos = [MAX_X/2, MAX_Y/2]
+        self.pos = pos
+        if vel == None:
+            vel = [3, 4]
+        self.vel = vel
         self.load_sprite()
 
     def load_sprite(self):
@@ -78,6 +83,13 @@ class Ball(pygame.sprite.Sprite):
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
         self.rect.center = self.pos
+
+
+#---- class: Game --------------------------------------------------------
+class Game():
+
+    def __init__(self, display):
+        self.display = display
 
 
 def terminate():
@@ -133,6 +145,7 @@ def main():
         players.update()
         balls.update()
 
+
         # detect ball colliding with walls or endzones
         for b in balls:
             if b.rect.top < 0 or b.rect.bottom > MAX_Y:
@@ -141,12 +154,12 @@ def main():
             if b.rect.right < 0:
                 player2.score += 1
                 b.kill()
-                balls.add(Ball())
+                balls.add(Ball([4, 5]))
 
             if b.rect.left > MAX_X:
                 player1.score += 1
                 b.kill()
-                balls.add(Ball())
+                balls.add(Ball([-4, 5]))
 
         # detect collision with paddles
         for b in pygame.sprite.spritecollide(player1, balls, 0):
@@ -162,11 +175,11 @@ def main():
         balls.draw(DISPLAY)
 
         p1_img = FONT1.render("%d"%(player1.score), True, GRAY, BGCOLOR)
-        p1_img_pos = ( MAX_X/4-p1_img.get_width(), MAX_Y/2-p1_img.get_height() )
+        p1_img_pos = ( MAX_X/4-p1_img.get_width(), 10 )
         DISPLAY.blit(p1_img, p1_img_pos )
 
         p2_img = FONT1.render("%d"%(player2.score), True, GRAY, BGCOLOR)
-        p2_img_pos = ( MAX_X*3/4-p2_img.get_width(), MAX_Y/2-p2_img.get_height() )
+        p2_img_pos = ( MAX_X*3/4-p2_img.get_width(), 10 )
         DISPLAY.blit(p2_img, p2_img_pos )
 
         pygame.draw.line(DISPLAY, GRAY, (MAX_X/2, 0), (MAX_X/2, MAX_Y))
