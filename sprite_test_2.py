@@ -97,8 +97,8 @@ class AnimatedSprite(pygame.sprite.Sprite):
     def is_done(self):
         return not self.repeat and self.index >= len(self.frames)-1
 
-    def update(self, frames = 1):
-        self.advance_frame(frames)
+    def update(self, *args):
+        self.advance_frame()
         self.image = self.frames[self.index]
         if self.is_done():
             self.kill()
@@ -115,7 +115,7 @@ class GameObject():
         self.vel = vel
         self.angle = 0
 
-    def update(self):
+    def update(self, *args):
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
         self.check_boundry()
@@ -158,6 +158,7 @@ class Explosion(AnimatedSprite):
         AnimatedSprite.__init__(self)
         self.repeat = False
         self.rect.center = pos
+
 
 #---- class: Ship --------------------------------------------------------
 class Ship(pygame.sprite.Sprite, GameObject):
@@ -249,13 +250,10 @@ def main():
     Explosion.set_frames( sheet.get_sprites('explosion') )
     Ship.set_image( sheet.sprites['ship'] )
 
-    grp = pygame.sprite.RenderPlain()
-    grp.add( Asteroid([140, 0], [3, 4]))
-    #grp.add( Asteroid([MAX_X/2.0, MAX_Y/2.0]))
-    #grp.add(Explosion([MAX_X/2.0, MAX_Y/2.0]))
+    asteroids = pygame.sprite.RenderPlain()
+    asteroids.add( Asteroid([140, 0], [3, 4]))
     ship = Ship()
-    grp.add(ship)
-
+    allsprites = pygame.sprite.Group(ship)
 
     #main game loop
     while True:
@@ -265,11 +263,23 @@ def main():
         if commands['quit']:
             terminate()
 
-        grp.update(commands)
+        allsprites.update(commands)
+        asteroids.update(commands)
+
+        # detect collisions
+        #func = pygame.sprite.collide_cirle()
+        for a in pygame.sprite.spritecollide(ship, asteroids, False):
+            if ship.alive():
+                allsprites.add( Explosion(ship.pos) )
+                ship.kill()
+
+
+
 
         # draw main screen
         DISPLAY.fill(BGCOLOR)
-        grp.draw(DISPLAY)
+        allsprites.draw(DISPLAY)
+        asteroids.draw(DISPLAY)
 
         # advance game frame
         pygame.display.update()
