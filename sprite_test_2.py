@@ -31,6 +31,7 @@ class Spritesheet():
     def __init__(self):
         self.load_asteroid_sprites()
         self.load_explosion_sprites()
+        self.load_ship_sprite()
 
     def load_asteroid_sprites(self):
         self.sheet1 = pygame.image.load('assets/asteroid2.png')
@@ -41,6 +42,16 @@ class Spritesheet():
         self.sheet2 = pygame.image.load('assets/explosion1_64x64.png')
         images = self._extract_sprites(self.sheet2, 64, 5, 5)
         self.sprites['explosion'] = images
+
+    def load_ship_sprite(self):
+        img = pygame.Surface((32, 32))
+        img.fill(WHITE)
+        img.set_colorkey(WHITE)
+        pts = ( (32, 16), (0, 28), (0, 4) )
+        #pts = ( (32, 16), (4, 28), (4, 4) )
+        pygame.draw.polygon(img, GRAY, pts, 3)
+        self.sprites['ship'] = img
+
 
     @staticmethod
     def _extract_sprites(sheet, size, rows, columns):
@@ -92,6 +103,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         if self.is_done():
             self.kill()
 
+
 #---- class: GameObject --------------------------------------------------
 class GameObject():
     """
@@ -101,6 +113,7 @@ class GameObject():
     def __init__(self, pos=[0,0], vel=[0,0]):
         self.pos = pos
         self.vel = vel
+        self.angle = 0
 
     def update(self):
         self.pos[0] += self.vel[0]
@@ -118,6 +131,11 @@ class GameObject():
         if self.pos[1] < 0:
             self.pos[1] = MAX_Y
 
+        if self.angle < 0:
+            self.angle += 360
+        if self.angle > 360:
+            self.angle -= 360
+
 
 
 #---- class: Asteroid ----------------------------------------------------
@@ -127,7 +145,7 @@ class Asteroid(AnimatedSprite, GameObject):
         AnimatedSprite.__init__(self)
         GameObject.__init__(self, pos, vel)
 
-    def update(self):
+    def update(self, commands):
         AnimatedSprite.update(self)
         GameObject.update(self)
         self.rect.center = self.pos
@@ -140,6 +158,130 @@ class Explosion(AnimatedSprite):
         AnimatedSprite.__init__(self)
         self.repeat = False
         self.rect.center = pos
+
+#---- class: Ship --------------------------------------------------------
+class Ship(pygame.sprite.Sprite, GameObject):
+
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        GameObject.__init__(self)
+        self.image = self.image_orig
+        self.rect = self.image.get_rect()
+        self.reset()
+
+    def reset(self):
+        self.pos = [MAX_X/2, MAX_Y/2]
+        self.angle = 270
+
+    def update(self, cmd):
+        self.angle += 10 * (cmd['right'] + cmd['left'])
+        if cmd['thrust']:
+            self.vel[0] += math.cos(math.radians(self.angle))*0.5
+            self.vel[1] += math.sin(math.radians(self.angle))*0.5
+
+        GameObject.update(self)
+
+        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+
+    @classmethod
+    def set_image(cls, img):
+        cls.image_orig = img
+
+
+##########################################################################
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+
+def init(max_x, max_y, title = 'pyGame Template'):
+    pygame.init()
+    clk = pygame.time.Clock()
+    disp = pygame.display.set_mode((max_x, max_y))
+    pygame.display.set_caption(title)
+    random.seed()
+    return disp, clk
+
+
+def handle_events(cmd):
+    for event in pygame.event.get():
+
+        if event.type == QUIT:
+            cmd['quit'] = True
+
+        elif event.type == KEYDOWN:
+            if event.key == K_LEFT:
+                cmd['left'] = -1
+            elif event.key == K_RIGHT:
+                cmd['right'] = 1
+            elif event.key == K_UP:
+                cmd['thrust'] = 1
+
+        elif event.type == KEYUP:
+            if event.key == K_ESCAPE:
+                cmd['quit'] = True
+            elif event.key == K_LEFT:
+                cmd['left'] = 0
+            elif event.key == K_RIGHT:
+                cmd['right'] = 0
+            elif event.key == K_UP:
+                cmd['thrust'] = 0
+
+
+
+#---- main() -------------------------------------------------------------
+def main():
+    level = 1
+    score = 0
+    lives = 2
+    highscore = 0
+    commands = {'quit': False, 'left': 0, 'right': 0, 'thrust': 0, 'fire': 0}
+
+    DISPLAY, CLOCK = init(MAX_X, MAX_Y)
+    FONT1 = pygame.font.SysFont('courier', 45)
+    FONT2 = pygame.font.SysFont('courier', 15)
+
+    sheet = Spritesheet()
+    Asteroid.set_frames( sheet.sprites['asteroid'] )
+    Explosion.set_frames( sheet.get_sprites('explosion') )
+    Ship.set_image( sheet.sprites['ship'] )
+
+    grp = pygame.sprite.RenderPlain()
+    grp.add( Asteroid([140, 0], [3, 4]))
+    #grp.add( Asteroid([MAX_X/2.0, MAX_Y/2.0]))
+    #grp.add(Explosion([MAX_X/2.0, MAX_Y/2.0]))
+    ship = Ship()
+    grp.add(ship)
+
+
+    #main game loop
+    while True:
+
+        handle_events(commands)
+
+        if commands['quit']:
+            terminate()
+
+        grp.update(commands)
+
+        # draw main screen
+        DISPLAY.fill(BGCOLOR)
+        grp.draw(DISPLAY)
+
+        # advance game frame
+        pygame.display.update()
+        CLOCK.tick(FPS)
+
+
+    terminate()
+
+####
+if __name__ == '__main__':
+    main()
+
 
 
 #---- class: Game --------------------------------------------------------
@@ -201,74 +343,6 @@ class Game():
                     terminate()
                 elif event.key == K_q:
                     self.gameover = True
-
-
-
-##########################################################################
-
-def terminate():
-    pygame.quit()
-    sys.exit()
-
-
-def init(max_x, max_y, title = 'pyGame Template'):
-    pygame.init()
-    clk = pygame.time.Clock()
-    disp = pygame.display.set_mode((max_x, max_y))
-    pygame.display.set_caption(title)
-    random.seed()
-    return disp, clk
-
-
-
-#---- main() -------------------------------------------------------------
-def main():
-    level = 1
-    score = 0
-    lives = 2
-    highscore = 0
-
-    DISPLAY, CLOCK = init(MAX_X, MAX_Y)
-    FONT1 = pygame.font.SysFont('courier', 45)
-    FONT2 = pygame.font.SysFont('courier', 15)
-
-    sheet = Spritesheet()
-    Asteroid.set_frames( sheet.sprites['asteroid'] )
-    Explosion.set_frames( sheet.get_sprites('explosion') )
-
-    splash_grp = pygame.sprite.RenderPlain()
-    splash_grp.add (Asteroid( [MAX_X/2.0, MAX_Y/2.0]))
-    splash_grp.add (Explosion([MAX_X/2.0, MAX_Y/2.0]))
-
-    #main game loop
-    while True:
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                terminate()
-            elif event.type == KEYUP:
-                if event.key == K_ESCAPE:
-                    terminate()
-                if event.key == K_n:
-                    g = Game(DISPLAY, CLOCK)
-                    g.main_loop()
-
-        splash_grp.update()
-
-        # draw main screen
-        DISPLAY.fill(BGCOLOR)
-        splash_grp.draw(DISPLAY)
-
-        # advance game frame
-        pygame.display.update()
-        CLOCK.tick(FPS)
-
-
-    terminate()
-
-####
-if __name__ == '__main__':
-    main()
-
 
 
 
