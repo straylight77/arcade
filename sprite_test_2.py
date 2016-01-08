@@ -34,34 +34,23 @@ class Spritesheet():
 
     def load_asteroid_sprites(self):
         self.sheet1 = pygame.image.load('assets/asteroid2.png')
-        #self.sprites['asteroid'] = self._extract_sprites(self.sheet1, 64, 6, 5)
-
-        images = []
-        s = 64
-        for y in range(0,6):
-            for x in range (0, 5):
-                img = self.sheet1.subsurface((x*s, y*s, s, s))
-                images.append(img)
+        images = self._extract_sprites(self.sheet1, 64, 6, 5)
         self.sprites['asteroid'] = images
-
 
     def load_explosion_sprites(self):
         self.sheet2 = pygame.image.load('assets/explosion1_64x64.png')
-        images = []
-        s = 64
-        for y in range(0, 5):
-            for x in range (0, 5):
-                img = self.sheet2.subsurface((x*s, y*s, s, s))
-                images.append(img)
+        images = self._extract_sprites(self.sheet2, 64, 5, 5)
         self.sprites['explosion'] = images
 
+    @staticmethod
     def _extract_sprites(sheet, size, rows, columns):
         images = []
         for y in range(0, rows):
             for x in range (0, columns):
                 rect = (x*size, y*size, size, size)
-                img = self.sheet2.subsurface(rect)
+                img = sheet.subsurface(rect)
                 images.append(img)
+        return images
 
 
     def get_sprites(self, name):
@@ -103,23 +92,20 @@ class AnimatedSprite(pygame.sprite.Sprite):
         if self.is_done():
             self.kill()
 
-
-#---- class: Asteroid ----------------------------------------------------
-class Asteroid(AnimatedSprite):
-
+#---- class: GameObject --------------------------------------------------
+class GameObject():
+    """
+    Base class containing logic for objects in the game. Implements the physics
+    of position and velocity.
+    """
     def __init__(self, pos=[0,0], vel=[0,0]):
-        AnimatedSprite.__init__(self)
         self.pos = pos
         self.vel = vel
-        self.index = 0
 
     def update(self):
-        AnimatedSprite.update(self)
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
-        print self.pos, self.vel
         self.check_boundry()
-        self.rect.center = self.pos
 
     def check_boundry(self):
         if self.pos[0] > MAX_X:
@@ -134,6 +120,18 @@ class Asteroid(AnimatedSprite):
 
 
 
+#---- class: Asteroid ----------------------------------------------------
+class Asteroid(AnimatedSprite, GameObject):
+
+    def __init__(self, pos=[0,0], vel=[0,0]):
+        AnimatedSprite.__init__(self)
+        GameObject.__init__(self, pos, vel)
+
+    def update(self):
+        AnimatedSprite.update(self)
+        GameObject.update(self)
+        self.rect.center = self.pos
+
 
 #---- class: Explosion ---------------------------------------------------
 class Explosion(AnimatedSprite):
@@ -141,7 +139,6 @@ class Explosion(AnimatedSprite):
     def __init__(self, pos):
         AnimatedSprite.__init__(self)
         self.repeat = False
-        self.pos = pos
         self.rect.center = pos
 
 
@@ -156,6 +153,7 @@ class Game():
     level = 1
     score = 0
     lives = 2
+    highscore = 0
 
     def __init__(self, display, clock):
         self.display = display
@@ -206,7 +204,8 @@ class Game():
 
 
 
-##### functions ##########################################################
+##########################################################################
+
 def terminate():
     pygame.quit()
     sys.exit()
@@ -224,17 +223,22 @@ def init(max_x, max_y, title = 'pyGame Template'):
 
 #---- main() -------------------------------------------------------------
 def main():
-    #init pygame
+    level = 1
+    score = 0
+    lives = 2
+    highscore = 0
 
     DISPLAY, CLOCK = init(MAX_X, MAX_Y)
-    FONT1 = pygame.font.SysFont('courier', 15)
+    FONT1 = pygame.font.SysFont('courier', 45)
+    FONT2 = pygame.font.SysFont('courier', 15)
 
     sheet = Spritesheet()
     Asteroid.set_frames( sheet.sprites['asteroid'] )
     Explosion.set_frames( sheet.get_sprites('explosion') )
 
     splash_grp = pygame.sprite.RenderPlain()
-    splash_grp.add (Asteroid( [MAX_X/2.0, MAX_Y/2.0], [3.5,4.5] ))
+    splash_grp.add (Asteroid( [MAX_X/2.0, MAX_Y/2.0]))
+    splash_grp.add (Explosion([MAX_X/2.0, MAX_Y/2.0]))
 
     #main game loop
     while True:
@@ -253,6 +257,8 @@ def main():
         # draw main screen
         DISPLAY.fill(BGCOLOR)
         splash_grp.draw(DISPLAY)
+
+        # advance game frame
         pygame.display.update()
         CLOCK.tick(FPS)
 
