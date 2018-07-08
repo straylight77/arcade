@@ -17,7 +17,7 @@ SHIP_ACCEL = 1
 
 ####################################
 class Ship():
-    pos_x = MAX_X/2
+    pos_x = MAX_X//2
     pos_y = 15
     vel_x = 0
     vel_y = 0
@@ -30,7 +30,7 @@ class Ship():
         self.reset()
 
     def reset(self):
-        self.pos_x = MAX_X/2
+        self.pos_x = MAX_X//2
         self.pos_y = 40
         self.vel_x = 0
         self.vel_y = 0
@@ -131,7 +131,7 @@ class Planet():
     segments = []
     platform = []
     seg_size = 40
-    num_of_segments = MAX_X / seg_size
+    num_of_segments = MAX_X // seg_size
 
     platform_seg = 3
 
