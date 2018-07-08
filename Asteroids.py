@@ -100,7 +100,7 @@ class Ship(pygame.sprite.Sprite):
         self.image = self.image_orig
 
     def reset(self):
-        self.pos = (MAX_X/2, MAX_Y/2)
+        self.pos = (MAX_X//2, MAX_Y//2)
         self.angle = 90
         self.vel = (0, 0)
  
@@ -144,14 +144,14 @@ class Shot(pygame.sprite.Sprite):
         self.image = pygame.Surface((size, size))
         self.image.fill(BLACK)
         self.image.set_colorkey(BLACK)
-        pygame.draw.circle(self.image, (192,  10,  10), (size/2, size/2), size/2)
-        pygame.draw.circle(self.image, (192, 128, 128), (size/2, size/2), size/4)
+        pygame.draw.circle(self.image, (192,  10,  10), (size//2, size//2), size//2)
+        pygame.draw.circle(self.image, (192, 128, 128), (size//2, size//2), size//4)
         self.rect = self.image.get_rect()
 
         self.vel = (0, 0)
         self.pos = pos
         self.angle = angle
-        self.time_to_live = FPS/2
+        self.time_to_live = FPS//2
 
         vel_x = self.vel[0] + math.cos(math.radians(self.angle))*speed
         vel_y = self.vel[1] - math.sin(math.radians(self.angle))*speed
