@@ -26,7 +26,7 @@ class Paddle(pygame.sprite.Sprite):
         self.load_sprite()
         self.rect = self.image.get_rect()
         self.rect.y = arena.bottom-80
-        self.rect.x = arena.centerx - self.image.get_width()/2
+        self.rect.x = arena.centerx - self.image.get_width()//2
         self.balls_held = []
 
     def load_sprite(self):
@@ -96,7 +96,7 @@ class Ball(pygame.sprite.Sprite):
             self.vel_y = -self.vel_y
 
     def set_velocity(self, angle, speed = -1):
-        if speed <> -1:
+        if speed != -1:
             self.speed = speed
         rad = math.radians(angle)
         self.vel_x = self.speed * math.cos(rad)
@@ -191,16 +191,16 @@ blocks = pygame.sprite.RenderPlain()
 l = generate_level(arena_rect, level)
 blocks.add(l)
 
-right_margin_center = (MAX_X - arena_rect.right)/2 + arena_rect.right
+right_margin_center = (MAX_X - arena_rect.right)//2 + arena_rect.right
 
 score_title_img = BASICFONT.render("SCORE", True, ORANGE, BGCOLOR)
-score_title_x = right_margin_center - score_title_img.get_width()/2
+score_title_x = right_margin_center - score_title_img.get_width()//2
 lives_title_img = BASICFONT.render("LIVES", True, ORANGE, BGCOLOR)
-lives_title_x = right_margin_center - lives_title_img.get_width()/2
+lives_title_x = right_margin_center - lives_title_img.get_width()//2
 level_title_img = BASICFONT.render("LEVEL", True, ORANGE, BGCOLOR)
-level_title_x = right_margin_center - level_title_img.get_width()/2
+level_title_x = right_margin_center - level_title_img.get_width()//2
 highscore_title_img = BASICFONT.render("HIGH SCORE", True, ORANGE, BGCOLOR)
-highscore_title_x = right_margin_center - highscore_title_img.get_width()/2
+highscore_title_x = right_margin_center - highscore_title_img.get_width()//2
 
 while True:
 
@@ -308,22 +308,22 @@ while True:
     blocks.draw(DISPLAYSURF)
 
     level_img = BASICFONT.render("%d"%(level), True, WHITE, BGCOLOR)
-    x = right_margin_center - level_img.get_width()/2
+    x = right_margin_center - level_img.get_width()//2
     DISPLAYSURF.blit(level_title_img, (level_title_x, 200))
     DISPLAYSURF.blit(level_img, (x, 230))
 
     score_img = BASICFONT.render("%d"%(score), True, WHITE, BGCOLOR)
-    x = right_margin_center - score_img.get_width()/2
+    x = right_margin_center - score_img.get_width()//2
     DISPLAYSURF.blit(score_title_img, (score_title_x, 300))
     DISPLAYSURF.blit(score_img, (x, 330))
 
     lives_img = BASICFONT.render("%d"%(lives), True, WHITE, BGCOLOR)
-    x = right_margin_center - lives_img.get_width()/2
+    x = right_margin_center - lives_img.get_width()//2
     DISPLAYSURF.blit(lives_title_img, (lives_title_x, 400))
     DISPLAYSURF.blit(lives_img, (x, 430))
 
     highscore_img = BASICFONT.render("%d"%(highscore), True, WHITE, BGCOLOR)
-    x = right_margin_center - highscore_img.get_width()/2
+    x = right_margin_center - highscore_img.get_width()//2
     DISPLAYSURF.blit(highscore_title_img, (highscore_title_x, 500))
     DISPLAYSURF.blit(highscore_img, (x, 530))
 
