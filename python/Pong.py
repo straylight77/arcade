@@ -65,7 +65,7 @@ class Ball(pygame.sprite.Sprite):
     def __init__(self, vel = None, pos = None):
         pygame.sprite.Sprite.__init__(self)
         if pos == None:
-            pos = [MAX_X/2, MAX_Y/2]
+            pos = [MAX_X//2, MAX_Y//2]
         self.pos = pos
         if vel == None:
             vel = [3, 4]
@@ -112,8 +112,8 @@ def main():
     pygame.display.set_caption('pyGame Template')
     random.seed()
 
-    player1 = Paddle((20, MAX_Y/2), BLUE)
-    player2 = Paddle((MAX_X-20, MAX_Y/2), GREEN)
+    player1 = Paddle((20, MAX_Y//2), BLUE)
+    player2 = Paddle((MAX_X-20, MAX_Y//2), GREEN)
     players = pygame.sprite.RenderPlain(player1, player2)
 
     balls = pygame.sprite.RenderPlain( Ball() )
@@ -175,14 +175,14 @@ def main():
         balls.draw(DISPLAY)
 
         p1_img = FONT1.render("%d"%(player1.score), True, GRAY, BGCOLOR)
-        p1_img_pos = ( MAX_X/4-p1_img.get_width(), 10 )
+        p1_img_pos = ( MAX_X//4-p1_img.get_width(), 10 )
         DISPLAY.blit(p1_img, p1_img_pos )
 
         p2_img = FONT1.render("%d"%(player2.score), True, GRAY, BGCOLOR)
-        p2_img_pos = ( MAX_X*3/4-p2_img.get_width(), 10 )
+        p2_img_pos = ( MAX_X*3//4-p2_img.get_width(), 10 )
         DISPLAY.blit(p2_img, p2_img_pos )
 
-        pygame.draw.line(DISPLAY, GRAY, (MAX_X/2, 0), (MAX_X/2, MAX_Y))
+        pygame.draw.line(DISPLAY, GRAY, (MAX_X//2, 0), (MAX_X//2, MAX_Y))
 
         pygame.display.update()
         CLOCK.tick(FPS)
