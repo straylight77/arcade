@@ -125,7 +125,7 @@ class Ship():
             #do something
             advance_frame()
 
-####################################            
+####################################
 class Planet():
 
     segments = []
@@ -165,7 +165,7 @@ class Planet():
         pygame.draw.line(DISPLAYSURF, RED, self.platform[0], self.platform[1], 4)
 
 
-####################################            
+####################################
 def terminate():
     pygame.quit()
     sys.exit()
@@ -284,5 +284,3 @@ while not gameover:
 
 
 terminate()
-
-

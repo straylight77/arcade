@@ -133,7 +133,7 @@ while True:
     #update game objects
     for s in asteroids:
         s.update()
-    #TODO: cull the explosions list once the animation is done    
+    #TODO: cull the explosions list once the animation is done
     #for i in range(0, len(explosions)):
     #    if explosions[i].is_done():
     #        del(explosions[i])
@@ -148,6 +148,3 @@ while True:
     advance_frame()
 
 terminate()   # won't actually get called
-
-
-

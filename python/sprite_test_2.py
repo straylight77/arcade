@@ -353,6 +353,3 @@ class Game():
                     terminate()
                 elif event.key == K_q:
                     self.gameover = True
-
-
-

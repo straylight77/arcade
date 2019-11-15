@@ -333,5 +333,3 @@ while True:
     FPSCLOCK.tick(FPS)
 
 terminate()
-
-

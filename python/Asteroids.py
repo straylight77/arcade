@@ -103,7 +103,7 @@ class Ship(pygame.sprite.Sprite):
         self.pos = (MAX_X//2, MAX_Y//2)
         self.angle = 90
         self.vel = (0, 0)
- 
+
 
     def update(self, thrust, left, right):
         if left:
@@ -295,7 +295,3 @@ while True:
 
 
 terminate()   # won't actually get called
-
-
-
-
