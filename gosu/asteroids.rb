@@ -14,8 +14,8 @@ class GameObject
     @x, @y = x, y
   end
 
-  def set_velocity(vx, vy)
-    @vel_x, @vel_y = vx, vy
+  def set_velocity(vel_x, vel_y)
+    @vel_x, @vel_y = vel_x, vel_y
   end
 
   def move
