@@ -111,8 +111,8 @@ class Ship(pygame.sprite.Sprite):
         if right:
             self.angle -= 10
         if thrust:
-            vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.5
-            vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.5
+            vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.25
+            vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.25
             #set max?
             self.vel = (vel_x, vel_y)
 
@@ -151,7 +151,7 @@ class Shot(pygame.sprite.Sprite):
         self.vel = (0, 0)
         self.pos = pos
         self.angle = angle
-        self.time_to_live = FPS//2
+        self.time_to_live = FPS//3
 
         vel_x = self.vel[0] + math.cos(math.radians(self.angle))*speed
         vel_y = self.vel[1] - math.sin(math.radians(self.angle))*speed
@@ -185,9 +185,12 @@ def terminate():
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
 DISPLAYSURF = pygame.display.set_mode((MAX_X, MAX_Y))
-BASICFONT = pygame.font.SysFont('courier', 15)
+BASICFONT = pygame.font.SysFont('arial', 12, True)
 pygame.display.set_caption('pyGame Template')
 random.seed()
+
+background = pygame.image.load(f"assets/space_background.jpg").convert()
+
 
 a = Asteroid()
 asteroids = pygame.sprite.RenderPlain(a)
@@ -261,15 +264,24 @@ while True:
 
 
     # draw frame
-    DISPLAYSURF.fill(BGCOLOR)
-    explosions.draw(DISPLAYSURF)
-    asteroids.draw(DISPLAYSURF)
+    #DISPLAYSURF.fill(BGCOLOR)
+    DISPLAYSURF.blit(background, (0, 0))
     shots.draw(DISPLAYSURF)
     ships.draw(DISPLAYSURF)
+    asteroids.draw(DISPLAYSURF)
+    explosions.draw(DISPLAYSURF)
 
-    msg = "LEVEL: %d   SCORE: %d    LIVES: %d"%(level, score, lives)
+
+    msg = f"LEVEL: {level}   SCORE: {score}    LIVES: {lives}"
     msg_disp = BASICFONT.render(msg, True, WHITE, BLACK)
     DISPLAYSURF.blit(msg_disp, (10, 10))
+
+    # show some debuging info
+    real_fps = FPSCLOCK.get_fps()
+    sprite_count = len(asteroids) + len(explosions) + len (shots) + len(ships)
+    debug_msg = f"FPS: {real_fps:.2f}   SPRITES: {sprite_count}"
+    debug_msg_surf = BASICFONT.render(debug_msg, True, WHITE, BLACK)
+    DISPLAYSURF.blit(debug_msg_surf, (10, 28))
 
 
     if len(asteroids) == 0 and len(explosions) == 0:
