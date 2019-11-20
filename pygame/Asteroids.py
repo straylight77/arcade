@@ -42,14 +42,10 @@ class Asteroid(pygame.sprite.Sprite):
         self.rect.center = self.pos
 
     def update(self):
-        x = self.pos[0] + self.vel[0]
-        y = self.pos[1] + self.vel[1]
-        if x >= MAX_X:  x = 0
-        if x < 0:       x = MAX_X
-        if y >= MAX_Y:  y = 0
-        if y < 0:       y = MAX_Y
+        x = (self.pos[0] + self.vel[0]) % MAX_X
+        y = (self.pos[1] + self.vel[1]) % MAX_Y
         self.pos = (x, y)
-
+        
         self.rect.center = self.pos
         self.image = self.ast_img[self.frame]
         self.frame += 1
@@ -76,12 +72,10 @@ class Explosion(pygame.sprite.Sprite):
                 self.exp_img.append(self.exp_spritesheet.subsurface( (x*s,y*s,s,s) ))
         self.image = self.exp_img[self.frame]
 
-
     def update(self):
         if self.frame < len(self.exp_img):
             self.image = self.exp_img[self.frame]
             self.frame += 1
-
 
     def is_done(self):
         return self.frame >= len(self.exp_img)
@@ -116,17 +110,9 @@ class Ship(pygame.sprite.Sprite):
             #set max?
             self.vel = (vel_x, vel_y)
 
-        if self.angle >= 360:
-            self.angle -= 360
-        elif self.angle < 0:
-            self.angle += 360
-
-        x = self.pos[0] + self.vel[0]
-        y = self.pos[1] + self.vel[1]
-        if x >= MAX_X:  x = 0
-        if x < 0:       x = MAX_X
-        if y >= MAX_Y:  y = 0
-        if y < 0:       y = MAX_Y
+        self.angle %= 360
+        x = (self.pos[0] + self.vel[0]) % MAX_X
+        y = (self.pos[1] + self.vel[1]) % MAX_Y
         self.pos = (x, y)
 
         self.image = pygame.transform.rotate(self.image_orig, self.angle)
@@ -153,22 +139,16 @@ class Shot(pygame.sprite.Sprite):
         self.angle = angle
         self.time_to_live = FPS//3
 
-        vel_x = self.vel[0] + math.cos(math.radians(self.angle))*speed
-        vel_y = self.vel[1] - math.sin(math.radians(self.angle))*speed
+        vel_x = self.vel[0] + math.cos(math.radians(self.angle)) * speed
+        vel_y = self.vel[1] - math.sin(math.radians(self.angle)) * speed
         self.vel = (vel_x, vel_y)
 
 
     def update(self):
-        x = self.pos[0] + self.vel[0]
-        y = self.pos[1] + self.vel[1]
-        if x >= MAX_X:  x = 0
-        if x < 0:       x = MAX_X
-        if y >= MAX_Y:  y = 0
-        if y < 0:       y = MAX_Y
+        x = (self.pos[0] + self.vel[0]) % MAX_X
+        y = (self.pos[1] + self.vel[1]) % MAX_Y
         self.pos = (x, y)
-
         self.rect.center = self.pos
-
         self.time_to_live -= 1
 
     def is_done(self):
@@ -191,15 +171,11 @@ random.seed()
 
 background = pygame.image.load(f"assets/space_background.jpg").convert()
 
-
-a = Asteroid()
-asteroids = pygame.sprite.RenderPlain(a)
+asteroids = pygame.sprite.RenderPlain( Asteroid() )
 explosions = pygame.sprite.RenderPlain()
-
+shots = pygame.sprite.RenderPlain()
 ship = Ship()
 ships = pygame.sprite.RenderPlain(ship)
-
-shots = pygame.sprite.RenderPlain()
 
 score = 0
 level = 1
@@ -262,7 +238,6 @@ while True:
         score += 10
 
 
-
     # draw frame
     #DISPLAYSURF.fill(BGCOLOR)
     DISPLAYSURF.blit(background, (0, 0))
@@ -270,7 +245,6 @@ while True:
     ships.draw(DISPLAYSURF)
     asteroids.draw(DISPLAYSURF)
     explosions.draw(DISPLAYSURF)
-
 
     msg = f"LEVEL: {level}   SCORE: {score}    LIVES: {lives}"
     msg_disp = BASICFONT.render(msg, True, WHITE, BLACK)
