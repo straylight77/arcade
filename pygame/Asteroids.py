@@ -23,8 +23,6 @@ class GameObject(pygame.sprite.Sprite):
         self.pos = (0, 0)
         self.vel = (0, 0)
         self.angle = 0
-        self.frame_idx = 0
-        self.is_animated = False
 
     def update(self):
         x = (self.pos[0] + self.vel[0]) % MAX_X
@@ -38,27 +36,26 @@ class GameObject(pygame.sprite.Sprite):
         self.image = pygame.image.load(filename).convert_alpha()
         self.set_rect()
 
+    def set_rect(self):
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+
     def load_animation(self, filename, size, width, height):
-        self.is_animated = True
         self.spritesheet = pygame.image.load(filename).convert_alpha()
         self.frames = []
+        self.next_frame_idx = 0
+        self.is_animated = True
         for y in range(0, height):
             for x in range (0, width):
                 sub_img = self.spritesheet.subsurface( (x*size, y*size, size, size) )
                 self.frames.append(sub_img)
         self.advance_frame()
 
-    def set_rect(self):
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
     def advance_frame(self):
-        self.frame_idx += 1
-        self.frame_idx %= len(self.frames)
-        self.image = self.frames[self.frame_idx]
+        self.image = self.frames[self.next_frame_idx]
+        self.next_frame_idx += 1
+        self.next_frame_idx %= len(self.frames)
         self.set_rect()
-
-        print ( f"{self.frame_idx} out of {len(self.frames)}" )
 
 
 #### Class: Asteroid ########################################################
