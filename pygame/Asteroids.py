@@ -16,8 +16,6 @@ BGCOLOR   = BLACK
 #### Class: GameObject ######################################################
 class GameObject(pygame.sprite.Sprite):
 
-    spritesheet = None
-
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.pos = (0, 0)
@@ -27,9 +25,17 @@ class GameObject(pygame.sprite.Sprite):
     def update(self):
         x = (self.pos[0] + self.vel[0]) % MAX_X
         y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
+        #self.pos = (x, y)
+        self.update_pos((x, y))
         if self.is_animated:
             self.advance_frame()
+
+    def update_pos(self, new_pos):
+        self.pos = new_pos
+        try:
+            self.rect.center = self.pos
+        except AttributeError:
+            pass
 
 
     def load_image(self, filename):
@@ -43,19 +49,23 @@ class GameObject(pygame.sprite.Sprite):
     def load_animation(self, filename, size, width, height):
         self.spritesheet = pygame.image.load(filename).convert_alpha()
         self.frames = []
-        self.next_frame_idx = 0
-        self.is_animated = True
         for y in range(0, height):
             for x in range (0, width):
                 sub_img = self.spritesheet.subsurface( (x*size, y*size, size, size) )
                 self.frames.append(sub_img)
-        self.advance_frame()
+        self.reset_animation()
+
+    def reset_animation(self, frame=0):
+        self.image = self.frames[frame]
+        self.rect = self.image.get_rect( center=self.pos )
+        self.next_frame_idx = frame + 1
+        self.is_animated = True
 
     def advance_frame(self):
         self.image = self.frames[self.next_frame_idx]
         self.next_frame_idx += 1
         self.next_frame_idx %= len(self.frames)
-        self.set_rect()
+        #self.set_rect()
 
 
 #### Class: Asteroid ########################################################
@@ -73,13 +83,11 @@ class Asteroid(GameObject):
         s = random.randint(3, 6)
         self.vel = (random.randint(-s, s), random.randint(-s, s))
 
-        #load asteroid sprite
         self.load_animation('assets/asteroid2.png', 64, 5, 6)
 
 
-    def update(self):
-        GameObject.update(self)
-        self.set_rect()
+    #def update(self):
+    #    GameObject.update(self)
 
 
 
