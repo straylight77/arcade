@@ -13,11 +13,59 @@ RED       = (255,  40,  40)
 BGCOLOR   = BLACK
 
 
-#### Class: Asteroid ########################################################
-class Asteroid(pygame.sprite.Sprite):
+#### Class: GameObject ######################################################
+class GameObject(pygame.sprite.Sprite):
+
+    spritesheet = None
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.pos = (0, 0)
+        self.vel = (0, 0)
+        self.angle = 0
+        self.frame_idx = 0
+        self.is_animated = False
+
+    def update(self):
+        x = (self.pos[0] + self.vel[0]) % MAX_X
+        y = (self.pos[1] + self.vel[1]) % MAX_Y
+        self.pos = (x, y)
+        if self.is_animated:
+            self.advance_frame()
+
+
+    def load_image(self, filename):
+        self.image = pygame.image.load(filename).convert_alpha()
+        self.set_rect()
+
+    def load_animation(self, filename, size, width, height):
+        self.is_animated = True
+        self.spritesheet = pygame.image.load(filename).convert_alpha()
+        self.frames = []
+        for y in range(0, height):
+            for x in range (0, width):
+                sub_img = self.spritesheet.subsurface( (x*size, y*size, size, size) )
+                self.frames.append(sub_img)
+        self.advance_frame()
+
+    def set_rect(self):
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
+
+    def advance_frame(self):
+        self.frame_idx += 1
+        self.frame_idx %= len(self.frames)
+        self.image = self.frames[self.frame_idx]
+        self.set_rect()
+
+        print ( f"{self.frame_idx} out of {len(self.frames)}" )
+
+
+#### Class: Asteroid ########################################################
+class Asteroid(GameObject):
+
+    def __init__(self):
+        GameObject.__init__(self)
 
         side = random.randint(1, 4)
         if side == 1:    self.pos = (random.randint(0, MAX_X), 0)
@@ -29,28 +77,12 @@ class Asteroid(pygame.sprite.Sprite):
         self.vel = (random.randint(-s, s), random.randint(-s, s))
 
         #load asteroid sprite
-        self.ast_spritesheet = pygame.image.load('assets/asteroid2.png').convert_alpha()
-        self.ast_img = []
-        s = 64
-        for y in range(0,6):
-            for x in range (0, 5):
-                self.ast_img.append(self.ast_spritesheet.subsurface( (x*s,y*s,s,s) ))
+        self.load_animation('assets/asteroid2.png', 64, 5, 6)
 
-        self.frame = 0
-        self.image = self.ast_img[self.frame]
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
 
     def update(self):
-        x = (self.pos[0] + self.vel[0]) % MAX_X
-        y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
-        
-        self.rect.center = self.pos
-        self.image = self.ast_img[self.frame]
-        self.frame += 1
-        if self.frame >= len(self.ast_img):
-            self.frame = 0
+        GameObject.update(self)
+        self.set_rect()
 
 
 
@@ -122,7 +154,7 @@ class Ship(pygame.sprite.Sprite):
 #### class: Shot ############################################################
 class Shot(pygame.sprite.Sprite):
 
-    def __init__(self, pos, angle, speed=40):
+    def __init__(self, pos, angle, speed=20):
         pygame.sprite.Sprite.__init__(self)
 
         #draw sprite
@@ -137,7 +169,7 @@ class Shot(pygame.sprite.Sprite):
         self.vel = (0, 0)
         self.pos = pos
         self.angle = angle
-        self.time_to_live = FPS//3
+        self.time_to_live = FPS//2
 
         vel_x = self.vel[0] + math.cos(math.radians(self.angle)) * speed
         vel_y = self.vel[1] - math.sin(math.radians(self.angle)) * speed
