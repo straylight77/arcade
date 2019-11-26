@@ -1,6 +1,7 @@
 import pygame, sys, math, random, os
 from pygame.locals import *
 
+DEBUG = False
 FPS = 30
 MAX_X = 800
 MAX_Y = 600
@@ -107,6 +108,7 @@ class Explosion(GameObject):
 
     def is_done(self):
         return self.is_animation_done()
+
 
 #### class: Shot ############################################################
 class Shot(GameObject):
@@ -247,7 +249,6 @@ while True:
 
 
     # draw frame
-    #DISPLAYSURF.fill(BGCOLOR)
     DISPLAYSURF.blit(background, (0, 0))
     shots.draw(DISPLAYSURF)
     ships.draw(DISPLAYSURF)
@@ -259,11 +260,12 @@ while True:
     DISPLAYSURF.blit(msg_disp, (10, 10))
 
     # show some debuging info
-    real_fps = FPSCLOCK.get_fps()
-    sprite_count = len(asteroids) + len(explosions) + len (shots) + len(ships)
-    debug_msg = f"FPS: {real_fps:.2f}   SPRITES: {sprite_count}"
-    debug_msg_surf = BASICFONT.render(debug_msg, True, WHITE, BLACK)
-    DISPLAYSURF.blit(debug_msg_surf, (10, 28))
+    if DEBUG is True:
+        real_fps = FPSCLOCK.get_fps()
+        sprite_count = len(asteroids) + len(explosions) + len (shots) + len(ships)
+        debug_msg = f"FPS: {real_fps:.2f}   SPRITES: {sprite_count}"
+        debug_msg_surf = BASICFONT.render(debug_msg, True, WHITE, BLACK)
+        DISPLAYSURF.blit(debug_msg_surf, (10, 28))
 
 
     if len(asteroids) == 0 and len(explosions) == 0:
