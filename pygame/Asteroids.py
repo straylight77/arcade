@@ -20,12 +20,19 @@ class GameObject(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.pos = (0, 0)
         self.vel = (0, 0)
-        self.angle = 0
+        self.angle = None
         self.is_animated = False
 
     def update(self):
         x = (self.pos[0] + self.vel[0]) % MAX_X
         y = (self.pos[1] + self.vel[1]) % MAX_Y
+        self.pos = (x, y)
+
+        if self.angle is not None:
+            self.angle %= 360
+            self.image = pygame.transform.rotate(self.image_orig, self.angle)
+            self.rect = self.image.get_rect()
+
         self.set_position((x, y))
         if self.is_animated:
             self.advance_frame()
@@ -67,9 +74,8 @@ class GameObject(pygame.sprite.Sprite):
         return self.next_frame_idx >= len(self.frames)
 
     def set_velocity(self, angle, speed):
-        #TODO: fix this.  Should be accelerate? 
-        vel_x = self.vel[0] + math.cos(math.radians(self.angle)) * speed
-        vel_y = self.vel[1] - math.sin(math.radians(self.angle)) * speed
+        vel_x = math.cos(math.radians(self.angle)) * speed
+        vel_y = -1 * math.sin(math.radians(self.angle)) * speed
         self.vel = (vel_x, vel_y)
 
 
@@ -91,7 +97,7 @@ class Asteroid(GameObject):
         self.load_animation('assets/asteroid2.png', 64, 5, 6)
 
 
-#### Class: Explosion ############################################
+#### Class: Explosion ######################################################
 class Explosion(GameObject):
 
     def __init__(self, pos):
@@ -119,6 +125,7 @@ class Shot(GameObject):
         self.image.set_colorkey(BLACK)
         pygame.draw.circle(self.image, (192,  10,  10), (size//2, size//2), size//2)
         pygame.draw.circle(self.image, (192, 128, 128), (size//2, size//2), size//4)
+        self.image_orig = self.image
         self.rect = self.image.get_rect()
 
     def update(self):
@@ -137,38 +144,22 @@ class Ship(GameObject):
         self.image_orig = self.image
         self.reset()
 
+    def reset(self):
+        self.set_position( (MAX_X//2, MAX_Y//2) )
+        self.angle = 90
+        self.vel = (0, 0)
+
     def update(self, thrust, left, right):
         if left:
             self.angle += 10
         if right:
             self.angle -= 10
         if thrust:
-            #TODO: replace with polar coords?
             vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.25
             vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.25
             self.vel = (vel_x, vel_y)
 
-        self.angle %= 360
-        #tODO: refactor to use GameObject.update
-        x = (self.pos[0] + self.vel[0]) % MAX_X
-        y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
-
-        #TODO: move to draw()?
-        self.image = pygame.transform.rotate(self.image_orig, self.angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
-    def set_velocity(self, angle, speed):
-        vel_x = self.vel[0] + math.cos(math.radians(self.angle)) * speed
-        vel_y = self.vel[1] - math.sin(math.radians(self.angle)) * speed
-        self.vel = (vel_x, vel_y)
-
-    def reset(self):
-        self.set_position( (MAX_X//2, MAX_Y//2) )
-        self.angle = 90
-        self.set_velocity(self.angle, 0)
-        self.vel = (0, 0)
+        GameObject.update(self)
 
 
 #### helper functions #####################################################
