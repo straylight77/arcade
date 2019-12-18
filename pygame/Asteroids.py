@@ -1,6 +1,7 @@
 import pygame, sys, math, random, os
 from pygame.locals import *
 
+DEBUG = False
 FPS = 30
 MAX_X = 800
 MAX_Y = 600
@@ -13,11 +14,77 @@ RED       = (255,  40,  40)
 BGCOLOR   = BLACK
 
 
-#### Class: Asteroid ########################################################
-class Asteroid(pygame.sprite.Sprite):
+#### Class: GameObject ######################################################
+class GameObject(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.pos = (0, 0)
+        self.vel = (0, 0)
+        self.angle = None
+        self.is_animated = False
+
+    def update(self):
+        x = (self.pos[0] + self.vel[0]) % MAX_X
+        y = (self.pos[1] + self.vel[1]) % MAX_Y
+        self.pos = (x, y)
+
+        if self.angle is not None:
+            self.angle %= 360
+            self.image = pygame.transform.rotate(self.image_orig, self.angle)
+            self.rect = self.image.get_rect()
+
+        self.set_position((x, y))
+        if self.is_animated:
+            self.advance_frame()
+
+    def set_position(self, new_pos):
+        self.pos = new_pos
+        try:
+            self.rect.center = self.pos
+        except AttributeError:
+            pass
+
+    def load_image(self, filename):
+        self.image = pygame.image.load(filename).convert_alpha()
+        self.rect = self.image.get_rect( center=self.pos )
+
+    def load_animation(self, filename, size, width, height, loop=True):
+        self.spritesheet = pygame.image.load(filename).convert_alpha()
+        self.frames = []
+        for y in range(0, height):
+            for x in range (0, width):
+                sub_img = self.spritesheet.subsurface( (x*size, y*size, size, size) )
+                self.frames.append(sub_img)
+        self.is_animated = True
+        self.animation_loops = loop
+        self.reset_animation()
+
+    def reset_animation(self, frame=0):
+        self.image = self.frames[frame]
+        self.rect = self.image.get_rect( center=self.pos )
+        self.next_frame_idx = frame + 1
+
+    def advance_frame(self):
+        self.image = self.frames[self.next_frame_idx]
+        self.next_frame_idx += 1
+        if self.animation_loops:
+            self.next_frame_idx %= len(self.frames)
+
+    def is_animation_done(self):
+        return self.next_frame_idx >= len(self.frames)
+
+    def set_velocity(self, angle, speed):
+        vel_x = math.cos(math.radians(self.angle)) * speed
+        vel_y = -1 * math.sin(math.radians(self.angle)) * speed
+        self.vel = (vel_x, vel_y)
+
+
+#### Class: Asteroid ########################################################
+class Asteroid(GameObject):
+
+    def __init__(self):
+        GameObject.__init__(self)
 
         side = random.randint(1, 4)
         if side == 1:    self.pos = (random.randint(0, MAX_X), 0)
@@ -28,76 +95,61 @@ class Asteroid(pygame.sprite.Sprite):
         s = random.randint(3, 6)
         self.vel = (random.randint(-s, s), random.randint(-s, s))
 
-        #load asteroid sprite
-        self.ast_spritesheet = pygame.image.load('assets/asteroid2.png').convert_alpha()
-        self.ast_img = []
-        s = 64
-        for y in range(0,6):
-            for x in range (0, 5):
-                self.ast_img.append(self.ast_spritesheet.subsurface( (x*s,y*s,s,s) ))
-
-        self.frame = 0
-        self.image = self.ast_img[self.frame]
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
-    def update(self):
-        x = (self.pos[0] + self.vel[0]) % MAX_X
-        y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
-        
-        self.rect.center = self.pos
-        self.image = self.ast_img[self.frame]
-        self.frame += 1
-        if self.frame >= len(self.ast_img):
-            self.frame = 0
+        self.load_animation('assets/asteroid2.png', 64, 5, 6)
 
 
-
-#### Class: Explosion ############################################
-class Explosion(pygame.sprite.Sprite):
+#### Class: Explosion ######################################################
+class Explosion(GameObject):
 
     def __init__(self, pos):
-        pygame.sprite.Sprite.__init__(self)
-        self.rect = pygame.Rect(0, 0, 64, 64)
-        self.rect.center = pos
-        self.frame = 0
-
-        #load explosion sprite
-        self.exp_spritesheet = pygame.image.load('assets/explosion1_64x64.png').convert_alpha()
-        self.exp_img = []
-        s = 64
-        for y in range(0, 5):
-            for x in range (0, 5):
-                self.exp_img.append(self.exp_spritesheet.subsurface( (x*s,y*s,s,s) ))
-        self.image = self.exp_img[self.frame]
-
-    def update(self):
-        if self.frame < len(self.exp_img):
-            self.image = self.exp_img[self.frame]
-            self.frame += 1
+        GameObject.__init__(self)
+        self.load_animation('assets/explosion1_64x64.png', 64, 5, 5, False)
+        self.set_position(pos)
 
     def is_done(self):
-        return self.frame >= len(self.exp_img)
+        return self.is_animation_done()
 
 
-#### class: Ship #################################################
-class Ship(pygame.sprite.Sprite):
+#### class: Shot ############################################################
+class Shot(GameObject):
+    def __init__(self, pos, angle, speed=20):
+        GameObject.__init__(self)
+        self.create_sprite()
+        self.set_position(pos)
+        self.angle = angle
+        self.set_velocity(self.angle, speed)
+        self.time_to_live = FPS//2
+
+    def create_sprite(self):
+        size = 8
+        self.image = pygame.Surface((size, size))
+        self.image.fill(BLACK)
+        self.image.set_colorkey(BLACK)
+        pygame.draw.circle(self.image, (192,  10,  10), (size//2, size//2), size//2)
+        pygame.draw.circle(self.image, (192, 128, 128), (size//2, size//2), size//4)
+        self.image_orig = self.image
+        self.rect = self.image.get_rect()
+
+    def update(self):
+        GameObject.update(self)
+        self.time_to_live -= 1
+
+    def is_done(self):
+        return self.time_to_live <= 0
+
+#### class: Ship ##########################################################
+class Ship(GameObject):
 
     def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
+        GameObject.__init__(self)
+        self.load_image('assets/ship1_32x32.png')
+        self.image_orig = self.image
         self.reset()
-        self.image_orig = pygame.image.load('assets/ship1_32x32.png').convert_alpha()
-        self.rect = self.image_orig.get_rect()
-
-        self.rect.center = self.pos
-        self.image = self.image_orig
 
     def reset(self):
-        self.pos = (MAX_X//2, MAX_Y//2)
+        self.set_position( (MAX_X//2, MAX_Y//2) )
         self.angle = 90
         self.vel = (0, 0)
-
 
     def update(self, thrust, left, right):
         if left:
@@ -107,61 +159,19 @@ class Ship(pygame.sprite.Sprite):
         if thrust:
             vel_x = self.vel[0] + math.cos(math.radians(self.angle))*0.25
             vel_y = self.vel[1] - math.sin(math.radians(self.angle))*0.25
-            #set max?
             self.vel = (vel_x, vel_y)
 
-        self.angle %= 360
-        x = (self.pos[0] + self.vel[0]) % MAX_X
-        y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
-
-        self.image = pygame.transform.rotate(self.image_orig, self.angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
-#### class: Shot ############################################################
-class Shot(pygame.sprite.Sprite):
-
-    def __init__(self, pos, angle, speed=40):
-        pygame.sprite.Sprite.__init__(self)
-
-        #draw sprite
-        size = 8
-        self.image = pygame.Surface((size, size))
-        self.image.fill(BLACK)
-        self.image.set_colorkey(BLACK)
-        pygame.draw.circle(self.image, (192,  10,  10), (size//2, size//2), size//2)
-        pygame.draw.circle(self.image, (192, 128, 128), (size//2, size//2), size//4)
-        self.rect = self.image.get_rect()
-
-        self.vel = (0, 0)
-        self.pos = pos
-        self.angle = angle
-        self.time_to_live = FPS//3
-
-        vel_x = self.vel[0] + math.cos(math.radians(self.angle)) * speed
-        vel_y = self.vel[1] - math.sin(math.radians(self.angle)) * speed
-        self.vel = (vel_x, vel_y)
+        GameObject.update(self)
 
 
-    def update(self):
-        x = (self.pos[0] + self.vel[0]) % MAX_X
-        y = (self.pos[1] + self.vel[1]) % MAX_Y
-        self.pos = (x, y)
-        self.rect.center = self.pos
-        self.time_to_live -= 1
-
-    def is_done(self):
-        return self.time_to_live <= 0
-
-
+#### helper functions #####################################################
 def terminate():
     pygame.quit()
     sys.exit()
 
 
 
-#### main ########################################
+#### main ################################################################
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
 DISPLAYSURF = pygame.display.set_mode((MAX_X, MAX_Y))
@@ -239,7 +249,6 @@ while True:
 
 
     # draw frame
-    #DISPLAYSURF.fill(BGCOLOR)
     DISPLAYSURF.blit(background, (0, 0))
     shots.draw(DISPLAYSURF)
     ships.draw(DISPLAYSURF)
@@ -251,11 +260,12 @@ while True:
     DISPLAYSURF.blit(msg_disp, (10, 10))
 
     # show some debuging info
-    real_fps = FPSCLOCK.get_fps()
-    sprite_count = len(asteroids) + len(explosions) + len (shots) + len(ships)
-    debug_msg = f"FPS: {real_fps:.2f}   SPRITES: {sprite_count}"
-    debug_msg_surf = BASICFONT.render(debug_msg, True, WHITE, BLACK)
-    DISPLAYSURF.blit(debug_msg_surf, (10, 28))
+    if DEBUG is True:
+        real_fps = FPSCLOCK.get_fps()
+        sprite_count = len(asteroids) + len(explosions) + len (shots) + len(ships)
+        debug_msg = f"FPS: {real_fps:.2f}   SPRITES: {sprite_count}"
+        debug_msg_surf = BASICFONT.render(debug_msg, True, WHITE, BLACK)
+        DISPLAYSURF.blit(debug_msg_surf, (10, 28))
 
 
     if len(asteroids) == 0 and len(explosions) == 0:
