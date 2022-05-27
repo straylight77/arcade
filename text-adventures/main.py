@@ -1,3 +1,5 @@
+#!/usr/bin/python3 
+
 import json, textwrap, cmd
 
 # https://inventwithpython.com/blog/2014/12/11/making-a-text-adventure-game-with-the-cmd-and-textwrap-python-modules/
