@@ -4,10 +4,11 @@ import pygame, sys, math, random
 from pygame.locals import *
 
 FPS = 30
-MAX_X = 1024
-MAX_Y = 768
+MAX_X = 1920
+MAX_Y = 1024
 
-C_MAIN    = (128, 128, 128)
+#C_MAIN    = (128, 128, 128)
+C_MAIN    = (192, 192, 192)
 C_KEY     = (255,   0, 255)
 C_BG      = (  0,   0,   0)
 
@@ -32,6 +33,7 @@ class GameObject(pygame.sprite.Sprite):
         self.vel[0] *= self.drag
         self.vel[1] *= self.drag
         self.check_boundry()
+        self.prepare_for_draw()
 
     def check_boundry(self):
         if self.pos[0] > MAX_X:
@@ -49,6 +51,10 @@ class GameObject(pygame.sprite.Sprite):
         if self.angle > 360:
             self.angle -= 360
 
+    def prepare_for_draw(self):
+        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
+        self.rect = self.image.get_rect()
+        self.rect.center = self.pos
 
     def create_sprite(self, size = (32,32), pts=None ):
         if pts is None:
@@ -77,11 +83,6 @@ class Ship(GameObject):
         self.pos = [MAX_X/2, MAX_Y/2]
         self.angle = 270
 
-    def prepare_for_draw(self):
-        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
-
 
     def update(self, cmd):
         self.angle += self.turn_rate * (cmd['right'] + cmd['left'])
@@ -89,25 +90,33 @@ class Ship(GameObject):
             self.vel[0] += math.cos(math.radians(self.angle)) * self.thrust_rate
             self.vel[1] += math.sin(math.radians(self.angle)) * self.thrust_rate
         GameObject.update(self)
-        self.prepare_for_draw()
 
 
 #---- class: Asteroid ----------------------------------------------------
 class Asteroid(GameObject):
 
-    def __init__(self):
-        GameObject.__init__(self)
+    def __init__(self, pos=[0,0], vel=[0,0]):
+        GameObject.__init__(self, pos, vel)
 
 
 class SmallAsteroid(Asteroid):
-    pass
+
+    def __init__(self, pos, vel=[0,0]):
+        Asteroid.__init__(self, pos, vel)
+        self.create_sprite( (32,32) )
 
 class MediumAsteroid(Asteroid):
-    pass
+
+    def __init__(self, pos, vel=[0,0]):
+        Asteroid.__init__(self, pos, vel)
+        self.create_sprite( (64,64) )
 
 
 class LargeAsteroid(Asteroid):
-    pass
+
+    def __init__(self, pos, vel=[0,0]):
+        Asteroid.__init__(self, pos, vel)
+        self.create_sprite( (128,128) )
 
 
 #---- class: Saucer -----------------------------------------------------
@@ -171,12 +180,14 @@ def main():
     highscore = 0
     commands = {'quit': False, 'left': 0, 'right': 0, 'thrust': 0, 'fire': 0}
 
-    DISPLAY, CLOCK = init(MAX_X, MAX_Y)
+    DISPLAY, CLOCK = init(MAX_X, MAX_Y, "Asteroid Classic")
     FONT1 = pygame.font.SysFont('courier', 45)
     FONT2 = pygame.font.SysFont('courier', 15)
 
-    #asteroids = pygame.sprite.RenderPlain()
-    #asteroids.add( Asteroid([140, 0], [3, 4]))
+    asteroids = pygame.sprite.RenderPlain()
+    asteroids.add( LargeAsteroid([MAX_X/4, MAX_Y/4]) )
+    asteroids.add( MediumAsteroid([MAX_X*3/4, MAX_Y/4]) )
+    asteroids.add( SmallAsteroid([MAX_X*3/4, MAX_Y*3/4]) )
     ship = Ship()
     allsprites = pygame.sprite.Group(ship)
 
@@ -189,7 +200,7 @@ def main():
             terminate()
 
         allsprites.update(commands)
-        #asteroids.update(commands)
+        asteroids.update(commands)
 
         # detect collisions
         #for a in pygame.sprite.spritecollide(ship, asteroids, False):
@@ -203,7 +214,7 @@ def main():
         # draw main screen
         DISPLAY.fill(C_BG)
         allsprites.draw(DISPLAY)
-        #asteroids.draw(DISPLAY)
+        asteroids.draw(DISPLAY)
 
         # advance game frame
         pygame.display.update()
