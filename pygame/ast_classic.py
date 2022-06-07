@@ -56,9 +56,15 @@ class GameObject(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = self.pos
 
-    def create_sprite(self, size = (32,32), pts=None ):
+    def create_sprite(self, size=(32,32), pts=None ):
         if pts is None:
-            pts = ( (0,0), (0,size[1]), size, (size[0],0), (0,0) )
+            # minus 3 because of the line thickness
+            pts = (
+                (0,            0),
+                (0,            size[1]-3),
+                (size[0]-3,    size[1]-3),
+                (size[0]-3,0), (0,0)
+            )
         img = pygame.Surface(size)
         img.fill(C_KEY)
         img.set_colorkey(C_KEY)
@@ -72,8 +78,6 @@ class Ship(GameObject):
 
     def __init__(self):
         GameObject.__init__(self)
-        self.thrust_rate = 0.5
-        self.turn_rate = 10
         self.create_sprite( pts=((32, 16), (0, 28), (0, 4)) )
         #self.drag = 0.97
         self.reset()
@@ -85,10 +89,12 @@ class Ship(GameObject):
 
 
     def update(self, cmd):
-        self.angle += self.turn_rate * (cmd['right'] + cmd['left'])
+        # 10 -> turn_rate
+        # 0.5 -> thrust_rate
+        self.angle += 10 * (cmd['right'] + cmd['left'])
         if cmd['thrust']:
-            self.vel[0] += math.cos(math.radians(self.angle)) * self.thrust_rate
-            self.vel[1] += math.sin(math.radians(self.angle)) * self.thrust_rate
+            self.vel[0] += math.cos(math.radians(self.angle)) * 0.5
+            self.vel[1] += math.sin(math.radians(self.angle)) * 0.5
         GameObject.update(self)
 
 
@@ -105,6 +111,7 @@ class SmallAsteroid(Asteroid):
         Asteroid.__init__(self, pos, vel)
         self.create_sprite( (32,32) )
 
+
 class MediumAsteroid(Asteroid):
 
     def __init__(self, pos, vel=[0,0]):
@@ -119,13 +126,13 @@ class LargeAsteroid(Asteroid):
         self.create_sprite( (128,128) )
 
 
-#---- class: Saucer -----------------------------------------------------
-class Saucer(GameObject):
+#---- class: Shot -------------------------------------------------------
+class Shot(GameObject):
     pass
 
 
-#---- class: Shot -------------------------------------------------------
-class Shot(GameObject):
+#---- class: Saucer -----------------------------------------------------
+class Saucer(GameObject):
     pass
 
 
