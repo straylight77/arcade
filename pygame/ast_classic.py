@@ -25,31 +25,17 @@ class GameObject(pygame.sprite.Sprite):
         self.pos = pos
         self.vel = vel
         self.angle = 0
-        self.drag = 1.0
 
     def update(self, *args):
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
-        self.vel[0] *= self.drag
-        self.vel[1] *= self.drag
         self.check_boundry()
         self.prepare_for_draw()
 
     def check_boundry(self):
-        if self.pos[0] > MAX_X:
-            self.pos[0] = 0
-        if self.pos[0] < 0:
-            self.pos[0] = MAX_X
-
-        if self.pos[1] > MAX_Y:
-            self.pos[1] = 0
-        if self.pos[1] < 0:
-            self.pos[1] = MAX_Y
-
-        if self.angle < 0:
-            self.angle += 360
-        if self.angle > 360:
-            self.angle -= 360
+        self.pos[0] %= MAX_X
+        self.pos[1] %= MAX_Y
+        self.angle %= 360
 
     def prepare_for_draw(self):
         self.image = pygame.transform.rotate(self.image_orig, -self.angle)
@@ -78,8 +64,7 @@ class Ship(GameObject):
 
     def __init__(self):
         GameObject.__init__(self)
-        self.create_sprite( pts=((32, 16), (0, 28), (0, 4)) )
-        #self.drag = 0.97
+        self.create_sprite( size=(32,32), pts=((32,16), (0,28), (0,4)) )
         self.reset()
         self.prepare_for_draw()
 
@@ -91,10 +76,14 @@ class Ship(GameObject):
     def update(self, cmd):
         # 10 -> turn_rate
         # 0.5 -> thrust_rate
+        # 0.98 -> drag coeffecient
         self.angle += 10 * (cmd['right'] + cmd['left'])
         if cmd['thrust']:
             self.vel[0] += math.cos(math.radians(self.angle)) * 0.5
             self.vel[1] += math.sin(math.radians(self.angle)) * 0.5
+        #else:
+        #    self.vel[0] *= 0.98
+        #    self.vel[1] *= 0.98
         GameObject.update(self)
 
 
@@ -214,8 +203,6 @@ def main():
         #    if ship.alive():
         #        allsprites.add( Explosion(ship.pos) )
         #        ship.kill()
-
-
 
 
         # draw main screen
