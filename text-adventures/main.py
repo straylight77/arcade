@@ -317,31 +317,31 @@ with open('space.json') as json_file:
     data = json.load(json_file)
 
     #create all of the items first so they can be referenced
-    for k in data['items']:
-        items[k] = Item(k, data['items'][k])
+    for k in data['ITEMS']:
+        items[k] = Item(k, data['ITEMS'][k])
 
     #create all of the props
-    for k in data['props']:
-        props[k] = Prop(k, data['props'][k])
+    for k in data['PROPS']:
+        props[k] = Prop(k, data['PROPS'][k])
 
     #create all of the rooms
-    for r in data['rooms']:
-        new_room = Room(r, data['rooms'][r]['desc'], data['rooms'][r]['exits'])
+    for r in data['ROOMS']:
+        new_room = Room(r, data['ROOMS'][r]['desc'], data['ROOMS'][r]['exits'])
 
         try:
-            for i in data['rooms'][r]['ground']:
+            for i in data['ROOMS'][r]['ground']:
                 new_room.add_item(items[i])
         except KeyError:
             pass
 
         try:
-            for p in data['rooms'][r]['props']:
+            for p in data['ROOMS'][r]['props']:
                 new_room.add_prop(props[p])
         except KeyError:
             pass
 
         try:
-            for k, v in data['rooms'][r]['barriers'].items():
+            for k, v in data['ROOMS'][r]['barriers'].items():
                 new_room.add_barrier(k, props[v])
         except KeyError:
             pass
