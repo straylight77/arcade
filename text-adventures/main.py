@@ -76,8 +76,8 @@ class Room:
 
     # -------------------------------------------------------
     def display(self):
-        print(self.name)
-        #print("-" * len(self.name))
+        print(self.name.upper())
+        print("-" * len(self.name))
 
         str = self.desc
 
