@@ -1,119 +1,154 @@
 {
     "ROOMS": {
-
-        "Engine Room": {
-            "desc": "Description of the room here.",
-            "exits": {
-                "east": "Lower Corridor"
-            },
-            "ground": [ "space suit" ]
-        },
-
-        "Lower Corridor": {
-            "desc": "A long hallway.",
-            "exits": {
-                "west": "Engine Room",
-                "north": "Cargo Bay",
-                "east": "Upper Corridor",
-                "south": "Observation Deck"
-            },
-            "ground": [ "hydrospanner" ]
-        },
-
-        "Upper Corridor": {
-            "desc": "A long hallway.",
-            "exits": {
-                "north": "Sick Bay",
-                "east": "Bridge",
-                "west": "Lower Corridor"
-            },
-            "barriers": {
-                "east": "security door"
-            }
-        },
-
-        "Bridge": {
-            "desc": "You're on the main bridge of the ship.  A Large window gives a view out to the endless void of space surrounded by multiple workstations.",
-            "exits": {
-                "west": "Upper Corridor",
-                "south": "Ready Room"
-            },
-            "barriers": {
-                "west": "Security Door"
-            }
-        },
-
-        "Ready Room": {
-            "desc": "This is the captain's private ready room.  It contains a large desk that has a few drawers and a computer opposite a few chairs and a couch off to the side.",
-            "exits": {
-                "north": "Bridge"
-            },
-            "props": [ "desk" ]
-        },
-
-        "Sick Bay": {
-            "desc": "You see beds surrounded by various medical equipment.",
-            "ground": [ ],
-            "exits": {
-                "south": "Upper Corridor",
-                "east": "Storage Closet"
-            },
-            "barriers": {
-                "east": "closet door"
-            }
-        },
-
         "Storage Closet": {
-            "desc": "A small room with several shelves holding various pieces of mostly useless equipment.",
-            "ground": [ "air tank" ],
+            "desc": "(Long description of the room here.)",
             "exits": {
-                "west": "Sick Bay"
+                "south": "Sick Bay"
+            }
+        },
+        "Sick Bay": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Storage Closet",
+                "east": "Fore Corridor"
             },
             "barriers": {
-                "west": "closet door"
+                "north": "closet door"
             }
         },
-
+        "Fore Corridor": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Bridge",
+                "east": "Airlock",
+                "south": "Aft Corridor",
+                "west": "Sick Bay"
+            }
+        },
+        "Bridge": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "east": "Ready Room",
+                "south": "Fore Corridor"
+            }
+        },
+        "Ready Room": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "west": "Bridge"
+            }
+        },
+        "Aft Corridor": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Fore Corridor",
+                "east": "Observation Deck",
+                "south": "Engine Room",
+                "west": "Cargo Bay"
+            }
+        },
         "Observation Deck": {
-            "desc": "A combination of a lounge and a mess hall for the crew, the observation deck has a giant window, a large table and several comfortable chairs.",
-            "props": [ "body" ],
+            "desc": "(Long description of the room here.)",
             "exits": {
-                "north": "Lower Corridor"
+                "west": "Aft Corridor"
             }
         },
-
-        "Cargo Bay": {
-            "desc": "Insert description of the room here.",
+        "Engine Room": {
+            "desc": "(Long description of the room here.)",
             "exits": {
-                "south": "Lower Corridor"
+                "north": "Aft Corridor",
+                "east": "Reactor Core"
+            }
+        },
+        "Reactor Core": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "west": "Engine Room"
+            }
+        },
+        "Cargo Bay": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "east": "Aft Corridor",
+                "south": "Shuttle"
+            }
+        },
+        "Shuttle": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Cargo Bay"
+            }
+        },
+        "Airlock": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "east": "Outer Space",
+                "west": "Fore Corridor"
+            }
+        },
+        "Outer Space": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Damaged Antenna",
+                "south": "Earthrise",
+                "west": "Airlock"
+            }
+        },
+        "Earthrise": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Outer Space",
+                "south": "Broken Conduit"
+            }
+        },
+        "Broken Conduit": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "north": "Earthrise"
+            }
+        },
+        "Damaged Antenna": {
+            "desc": "(Long description of the room here.)",
+            "exits": {
+                "south": "Outer Space"
             }
         }
 
     },
 
+
+
     "PROPS": {
         "closet door": {
+            "type": "barrier",
             "desc": "There's a door to the storage closet.",
             "state": "closed",
             "aliases": ["door"]
         },
         "security door": {
+            "type": "barrier",
             "desc": "A solid sliding metal door.",
             "state": "locked",
             "locked_with": "keycard",
             "aliases": ["door"]
         },
         "body": {
+            "type": "container",
+            "searchable": true,
             "desc": "The body of an officer is slumped against a wall.",
             "contains": [ "keycard" ],
             "aliases": [ "body", "corpse", "officer" ]
         },
         "desk": {
+            "type": "container",
+            "searchable": true,
+            "openable": true,
             "desc": "The captains desk.",
             "contains": [ "launch code" ],
             "aliases": [ "desk", "drawer" ]
         }
     },
+
 
     "ITEMS": {
         "keycard": {
