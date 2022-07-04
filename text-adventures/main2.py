@@ -36,6 +36,7 @@ class Room(Base):
     # ---------------------------------------------------------------------
     def description(self):
         room_str = "\n" + self.name.upper() + "\n"
+        room_str += ("-" * len(self.name)) + "\n"
         room_str += self.desc
         for d, r in self.exits.items():
             room_str += f"\n{d.capitalize()}: {r}"
@@ -105,14 +106,18 @@ class MainGameCmd(cmd.Cmd):
     def do_look(self, arg):
         """Look around your current location and get a description of what you see, visible exits, etc."""
         global player
-        print(player.location.description())
-
+        if player.location:
+            print(player.location.description())
+        else:
+            print("Unknown location.")  # this is an error if it happens
 
     # -------------------------------------------------------
     def do_go(self, arg):
         global player
+        # check to see if the direction is even allowed
         if not arg in ['north', 'east', 'south', 'west']:
             print("That's not a valid direction.")
+        # check if the direction is an option in the current room
         elif not arg in player.location.exits.keys():
             print("Moving in that direction isn't possible right now.")
         else:
@@ -121,24 +126,51 @@ class MainGameCmd(cmd.Cmd):
             print(f"You move {arg}.")
             self.do_look(None)
 
+    # -------------------------------------------------------
+    def do_n(self, arg):
+        self.do_go("north")
+
+    def do_e(self, arg):
+        self.do_go("east")
+
+    def do_s(self, arg):
+        self.do_go("south")
+
+    def do_w(self, arg):
+        self.do_go("west")
+
+
+
 
 # **** init() *************************************************************
 def init():
     global player, room
     player = Player()
-    r1 = Room("White Room", "This is a long description of the test room.")
-    r2 = Room("Blue Room", "This is a long description of the test room.")
-    r1.exits['east'] = r2
-    r2.exits['west'] = r1
-    rooms["White Room"] = r1
-    rooms["Blue Room"] = r2
-    player.location = r1
 
+    with open('space.json') as json_file:
+        data = json.load(json_file)
+
+        # create all of the rooms so they can be referenced
+        for name, values in data['ROOMS'].items():
+            rooms[name] = Room(name, values['desc'])
+
+        # loop through again to create all of the exits
+        for name, values in data['ROOMS'].items():
+            for direction, dest_name in values['exits'].items():
+                rooms[name].exits[direction] = rooms[dest_name]
+
+    player.location = rooms['Sick Bay']
 
 
 # **** main ***************************************************************
 if __name__ == '__main__':
     init()
+
+    print('Incident on Station 57')
+    print('======================')
+    print()
+    print('Type "help" for commands.')
+
     MainGameCmd().do_look(None)
     MainGameCmd().cmdloop()
 
