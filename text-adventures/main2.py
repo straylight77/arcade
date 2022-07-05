@@ -50,23 +50,29 @@ class Room(Base):
 
 
     # ---------------------------------------------------------------------
-    def description(self):
+    def describe(self):
         room_str = "\n" + self.name.upper() + "\n"
         room_str += ("-" * len(self.name)) + "\n"
-        room_str += self.desc
+        room_str += self.desc + "\n"
+
+        if len(self.barriers) > 0:
+            room_str += "You see:\n"
 
         # describe all of the barriers and their state
         for direction, b in self.barriers.items():
-            room_str += f" To the {direction} is a {b.name} which is {b.state}."
+            room_str += f"  a {b.name} to the {direction} which is {b.state}.\n"
 
         # list all of the exits
+        if len(self.exits) > 0:
+            room_str += "Visible exits:\n"
+
         for d, name in self.exits.items():
             if d in self.barriers.keys():
                 #TODO: move this check to Barrier class
                 if self.barriers[d].state == "open":
-                    room_str += f"\n{d.capitalize()}: {name}"
+                    room_str += f"  {d.capitalize()}: {name}\n"
             else:
-                room_str += f"\n{d.capitalize()}: {name}"
+                room_str += f"  {d.capitalize()}: {name}\n"
 
         return room_str
 
@@ -166,7 +172,7 @@ class MainGameCmd(cmd.Cmd):
         """Look around your current location and get a description of what you see, visible exits, etc."""
         global player
         if player.location:
-            print(player.location.description())
+            print(player.location.describe(), end="")
         else:
             print("Unknown location.")  # this is an error if it happens
 
