@@ -23,6 +23,9 @@
                 "east": "Airlock",
                 "south": "Aft Corridor",
                 "west": "Sick Bay"
+            },
+            "barriers":{ 
+                "north": "security door"
             }
         },
         "Bridge": {
@@ -49,6 +52,7 @@
         },
         "Observation Deck": {
             "desc": "(Long description of the room here.)",
+            "props": [ "body" ],
             "exits": {
                 "west": "Aft Corridor"
             }

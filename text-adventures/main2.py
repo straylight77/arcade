@@ -5,6 +5,7 @@ import json, textwrap, cmd
 SCREEN_WIDTH = 80
 
 rooms = { }
+props = { }
 player = None
 
 
@@ -32,14 +33,40 @@ class Room(Base):
         super().__init__(name)
         self.desc = desc
         self.exits = { }
+        self.barriers = { }
+
+    # ---------------------------------------------------------------------
+    def add_barrier(self, direction, b):
+        self.barriers[direction] = b
+
+    # ---------------------------------------------------------------------
+    def find_object(self, keyword):
+        for b in self.barriers.values():
+            if keyword == b.name:
+                return b
+            if keyword in b.aliases:
+                return b
+        return None
+
 
     # ---------------------------------------------------------------------
     def description(self):
         room_str = "\n" + self.name.upper() + "\n"
         room_str += ("-" * len(self.name)) + "\n"
         room_str += self.desc
-        for d, r in self.exits.items():
-            room_str += f"\n{d.capitalize()}: {r}"
+
+        # describe all of the barriers and their state
+        for direction, b in self.barriers.items():
+            room_str += f" To the {direction} is a {b.name} which is {b.state}."
+
+        # list all of the exits
+        for d, name in self.exits.items():
+            if d in self.barriers.keys():
+                #TODO: move this check to Barrier class
+                if self.barriers[d].state == "open":
+                    room_str += f"\n{d.capitalize()}: {name}"
+            else:
+                room_str += f"\n{d.capitalize()}: {name}"
 
         return room_str
 
@@ -58,6 +85,47 @@ class Prop(Base):
 
 
 # =========================================================================
+class Barrier(Prop):
+    """
+    Assign this to 2 rooms that share an exit.
+    Maintains the state to prevent or allow passage.
+      state = locked | closed | open
+    """
+
+    def __init__(self, name, args):
+        super().__init__(name)
+        try:
+            self.aliases = args['aliases']
+        except KeyError:
+            self.aliases = []
+
+        try:
+            self.state = args['state']
+        except KeyError:
+            self.state = None
+
+        try:
+            self.locked_with = args['locked_with']
+        except KeyError:
+            self.locked_with = None
+
+
+    def __str__(self):
+        return f"{self.name} ({self.state})"
+
+    def do_open(self):
+        if self.state == 'locked':
+            msg = f"It's locked. You'll need a {self.locked_with} to unlock it."
+        elif self.state == 'open':
+            msg = "It's already open."
+        else:
+            self.state = 'open'
+            msg = f"You open the {self.name}."
+        return msg
+
+
+
+# =========================================================================
 class Container(Prop, set):
     searchable = False
     openable = False
@@ -71,15 +139,6 @@ class Container(Prop, set):
     def do_unlock(self):
         pass
 
-
-# =========================================================================
-class Barrier(Prop):
-    """
-    Assign this to 2 rooms that share an exit.
-    Maintains the state to prevent or allow passage.
-    """
-    state = None  # locked | closed | open
-    unlocked_with = None
 
 
 # =========================================================================
@@ -113,6 +172,7 @@ class MainGameCmd(cmd.Cmd):
 
     # -------------------------------------------------------
     def do_go(self, arg):
+        """Move to a new location in the given direction."""
         global player
         # check to see if the direction is even allowed
         if not arg in ['north', 'east', 'south', 'west']:
@@ -128,31 +188,55 @@ class MainGameCmd(cmd.Cmd):
 
     # -------------------------------------------------------
     def do_n(self, arg):
+        """Shortcut to 'go north'"""
         self.do_go("north")
 
     def do_e(self, arg):
+        """Shortcut to 'go east'"""
         self.do_go("east")
 
     def do_s(self, arg):
+        """Shortcut to 'go south'"""
         self.do_go("south")
 
     def do_w(self, arg):
+        """Shortcut to 'go west'"""
         self.do_go("west")
 
+
+    # -------------------------------------------------------
+    def do_open(self, arg):
+        obj = player.location.find_object(arg)
+        if not obj:
+            print(f"You don't see a {arg} here.")
+        else:
+            print(obj.do_open())
 
 
 
 # **** init() *************************************************************
 def init():
-    global player, room
+    global player, rooms
     player = Player()
 
     with open('space.json') as json_file:
         data = json.load(json_file)
 
+        for name, values in data['PROPS'].items():
+            if values['type'] == 'barrier':
+                props[name] = Barrier(name, values)
+
         # create all of the rooms so they can be referenced
         for name, values in data['ROOMS'].items():
-            rooms[name] = Room(name, values['desc'])
+            new_room = Room(name, values['desc'])
+
+            try:
+                for d, b_name in values['barriers'].items():
+                    new_room.add_barrier(d, props[b_name])
+            except KeyError:
+                pass
+
+            rooms[name] = new_room
 
         # loop through again to create all of the exits
         for name, values in data['ROOMS'].items():
