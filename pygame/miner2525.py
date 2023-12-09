@@ -46,10 +46,10 @@ class GameObject(pygame.sprite.Sprite):
 #---- class: Player --------------------------------------------------------
 class Player(GameObject):
 
-    def __init__(self):
-        GameObject.__init__(self)
+    def __init__(self, pos=[0,0]):
+        super().__init__(self)
         self.load_sprite()
-        self.pos = [0, 0]
+        self.pos = pos
         #self.pos = [ MAX_X/2, MAX_Y/2 ]
         self.angle = 270
 
@@ -73,12 +73,36 @@ class Player(GameObject):
             self.vel[0] += math.cos(math.radians(self.angle))*0.5
             self.vel[1] += math.sin(math.radians(self.angle))*0.5
 
-        GameObject.update(self)
+        super().update(self)
 
         # prep for draw
         self.image = pygame.transform.rotate(self.image_orig, -self.angle)
         self.rect = self.image.get_rect()
         self.rect.center = [ MAX_X/2, MAX_Y/2 ]
+
+class Asteroid(GameObject):
+
+    def __init__(self, pos=[0,0], vel=[0,0]):
+        super().__init__(pos, vel)
+        self.load_sprite()
+
+    def load_sprite(self):
+        img = pygame.Surface((32, 32))
+        img.fill(VIOLET)
+        img.set_colorkey(VIOLET)
+        pts = ( (31, 31), (0, 31), (0, 0), (31, 0) )
+        pygame.draw.polygon(img, GRAY, pts, 4)
+        self.image_orig = img
+
+    def update(self, coords):
+        super().update(self)
+
+        # prep for draw
+        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
+        self.rect = self.image.get_rect()
+        x = MAX_X/2 + self.pos[0] - coords[0]
+        y = MAX_Y/2 + self.pos[1] - coords[1]
+        self.rect.center = [x, y]
 
 
 ##########################################################################
@@ -135,8 +159,14 @@ def main():
     FONT1 = pygame.font.SysFont('arial', 20)
     FONT2 = pygame.font.SysFont('courier', 15)
 
-    player = Player()
+    player = Player(pos=[-25,50])
     allsprites = pygame.sprite.Group(player)
+
+    #TODO should have to have both, use tuples?
+    a1 = Asteroid( pos=[0,0], vel=[0,0] )
+    a2 = Asteroid( pos=[0,0], vel=[1,1] )
+    asteroids = pygame.sprite.Group(a1)
+    asteroids.add(a2)
 
     #main game loop
     while True:
@@ -147,15 +177,25 @@ def main():
             terminate()
 
         allsprites.update(commands)
+        asteroids.update(player.pos)
 
         # draw main screen
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
+        asteroids.draw(DISPLAY)
 
 
         msg = f"pos: ({player.pos[0]:.1f}, {player.pos[1]:.1f}, {player.angle:.1f})"
         msg_disp = FONT1.render(msg, True, WHITE, BLACK)
         DISPLAY.blit(msg_disp, (10, 10))
+
+        msg = f"pos: ({a1.pos[0]:.1f}, {a1.pos[1]:.1f}, {a1.angle:.1f})"
+        msg_disp = FONT1.render(msg, True, WHITE, BLACK)
+        DISPLAY.blit(msg_disp, (10, 50))
+
+        msg = f"pos: ({a2.pos[0]:.1f}, {a2.pos[1]:.1f}, {a2.angle:.1f})"
+        msg_disp = FONT1.render(msg, True, WHITE, BLACK)
+        DISPLAY.blit(msg_disp, (10, 100))
 
 
 
