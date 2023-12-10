@@ -29,8 +29,8 @@ class GameObject(pygame.sprite.Sprite):
     angle ->
     drag ->
     """
+
     def __init__(self, pos=(0,0), vel=(0,0)):
-        # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
         self.vel = vel
@@ -45,6 +45,22 @@ class GameObject(pygame.sprite.Sprite):
         y = self.pos[1] + self.vel[1]
         self.pos = (x,y)
 
+    def load_sprite(self, width, pts=None, color=WHITE):
+        if pts == None:
+            pts = ( (width-1, width-1), (0, width-1), (0, 0), (width-1, 0) )
+        img = pygame.Surface((width, width))
+        img.fill(VIOLET)
+        img.set_colorkey(VIOLET)
+        pygame.draw.polygon(img, color, pts, 4)
+        self.image_orig = img
+        self.image = img
+
+    def prep_for_draw(self, offset=None):
+        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
+        self.rect = self.image.get_rect()
+        x = MAX_X/2 + self.pos[0] - offset[0]
+        y = MAX_Y/2 + self.pos[1] - offset[1]
+        self.rect.center = (x, y)
 
 
 #---- class: Player --------------------------------------------------------
@@ -54,7 +70,6 @@ class Player(GameObject):
         super().__init__(self)
         self.load_sprite()
         self.pos = pos
-        #self.pos = [ MAX_X/2, MAX_Y/2 ]
         self.angle = 270
 
         self.image = self.image_orig
@@ -62,13 +77,8 @@ class Player(GameObject):
         self.rect.center = [ MAX_X/2, MAX_Y/2 ]
 
     def load_sprite(self):
-        img = pygame.Surface((32, 32))
-        img.fill(VIOLET)
-        img.set_colorkey(VIOLET)
         pts = ( (32, 16), (0, 28), (0, 4) )
-        #pts = ( (32, 16), (4, 28), (4, 4) )
-        pygame.draw.polygon(img, WHITE, pts, 4)
-        self.image_orig = img
+        super().load_sprite(32, pts, GRAY)
 
 
     def update(self, cmd):
@@ -94,24 +104,11 @@ class Asteroid(GameObject):
         self.load_sprite()
 
     def load_sprite(self):
-        img = pygame.Surface((32, 32))
-        img.fill(VIOLET)
-        img.set_colorkey(VIOLET)
-        pts = ( (31, 31), (0, 31), (0, 0), (31, 0) )
-        pygame.draw.polygon(img, RED, pts, 4)
-        self.image_orig = img
+        super().load_sprite(32, None, RED)
 
     def update(self, coords):
         super().update(self)
-
-        # prep for draw
-        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
-        self.rect = self.image.get_rect()
-        x = MAX_X/2 + self.pos[0] - coords[0]
-        y = MAX_Y/2 + self.pos[1] - coords[1]
-        self.rect.center = (x, y)
-
-
+        self.prep_for_draw(coords)
 
 
 #---- class: Station --------------------------------------------------------
@@ -122,28 +119,17 @@ class Station(GameObject):
         self.load_sprite()
 
     def load_sprite(self):
-        w = 128
-        img = pygame.Surface((w, w))
-        img.fill(VIOLET)
-        img.set_colorkey(VIOLET)
-        pts = ( (w-1, w-1), (0, w-1), (0, 0), (w-1, 0) )
-        pygame.draw.polygon(img, BLUE, pts, 4)
-        self.image_orig = img
+        super().load_sprite(128, None, BLUE)
 
     def update(self, coords):
         super().update(self, coords)
-
-        # prep for draw
-        self.image = pygame.transform.rotate(self.image_orig, -self.angle)
-        self.rect = self.image.get_rect()
-        x = MAX_X/2 + self.pos[0] - coords[0]
-        y = MAX_Y/2 + self.pos[1] - coords[1]
-        self.rect.center = (x, y)
+        self.prep_for_draw(coords)
 
 
 #-------------------------------------------------------------------------
 class PolarObject(GameObject):
     """Extension of the base GameObject to use polar coordinates."""
+
     def __init__(self, angle=0, radius=100, vel=1):
         super().__init__(self)
         self.angle = angle
@@ -167,13 +153,7 @@ class PolarAsteroid(PolarObject):
         self.load_sprite()
 
     def load_sprite(self):
-        img = pygame.Surface((32, 32))
-        img.fill(VIOLET)
-        img.set_colorkey(VIOLET)
-        pts = ( (31, 31), (0, 31), (0, 0), (31, 0) )
-        pygame.draw.polygon(img, YELLOW, pts, 4)
-        self.image_orig = img
-        self.image = img
+        super().load_sprite(32, None, YELLOW)
 
     def update(self, coords):
         super().update()
@@ -185,8 +165,6 @@ class PolarAsteroid(PolarObject):
         x = MAX_X/2 + pos[0] - coords[0]
         y = MAX_Y/2 + pos[1] - coords[1]
         self.rect.center = (x, y)
-
-
 
 
 ##########################################################################
@@ -233,31 +211,31 @@ def handle_events(cmd):
 
 #---- main() -------------------------------------------------------------
 def main():
-    level = 1
-    score = 0
-    lives = 2
-    highscore = 0
     commands = {'quit': False, 'left': 0, 'right': 0, 'thrust': 0, 'fire': 0}
 
     DISPLAY, CLOCK = init(MAX_X, MAX_Y)
     FONT1 = pygame.font.SysFont('arial', 20)
     FONT2 = pygame.font.SysFont('courier', 15)
 
-    player = Player(pos=(-145, 130))
+    player = Player()
     allsprites = pygame.sprite.Group(player)
 
     station = Station()
     allsprites.add(station)
 
     asteroids = pygame.sprite.Group()
-    asteroids.add( Asteroid(vel=(-2,1), pos=(200,-200)) )
-    asteroids.add( Asteroid(vel=(1,1)) )
+    asteroids.add( Asteroid(vel=(-1,0.5), pos=(300,-250)) )
+    asteroids.add( Asteroid(vel=(1,0.5)) )
     allsprites.add(asteroids)
 
     asteroids2 = pygame.sprite.Group()
-    asteroids2.add( PolarAsteroid(vel=1, radius=250) )
-    asteroids2.add( PolarAsteroid(angle=90, vel=0.5, radius=270) )
-    asteroids2.add( PolarAsteroid(angle=45, vel=0.25, radius=270) )
+    for n in range(1,8):
+        a = random.randint(0, 360)
+        r = random.randint(200, 500)
+        v = random.randint(25, 150) / 100.0
+        p = PolarAsteroid(angle=a, radius=r, vel=v)
+        asteroids2.add(p)
+
     allsprites.add(asteroids2)
 
 
@@ -278,20 +256,18 @@ def main():
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
 
-        i = 0
-        for s in asteroids.sprites():
-            msg = f"pos: ({s.pos[0]:.1f}, {s.pos[1]:.1f}, {s.angle:.1f})"
-            msg_disp = FONT1.render(msg, True, RED, BLACK)
-            DISPLAY.blit(msg_disp, (10, 10+i*30))
-            i += 1
+        #i = 0
+        #for s in asteroids.sprites():
+        #    msg = f"{i}: ({s.pos[0]:.1f}, {s.pos[1]:.1f}, {s.angle:.1f})"
+        #    msg_disp = FONT1.render(msg, True, RED, BLACK)
+        #    DISPLAY.blit(msg_disp, (10, 10+i*30))
+        #    i += 1
 
-        for s in asteroids2.sprites():
-            msg = f"pos: ({s.angle:.1f}, {s.radius:.1f}, {s.vel:.1f})"
-            msg_disp = FONT1.render(msg, True, YELLOW, BLACK)
-            DISPLAY.blit(msg_disp, (10, 10+i*30))
-            i += 1
-
-
+        #for s in asteroids2.sprites():
+        #    msg = f"{i}: ({s.angle:.1f}, {s.radius:.1f}, {s.vel:.1f})"
+        #    msg_disp = FONT1.render(msg, True, YELLOW, BLACK)
+        #    DISPLAY.blit(msg_disp, (10, 10+i*30))
+        #    i += 1
 
         # advance game frame
         pygame.display.update()
