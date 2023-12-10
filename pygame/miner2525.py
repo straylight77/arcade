@@ -29,7 +29,7 @@ class GameObject(pygame.sprite.Sprite):
     angle ->
     drag ->
     """
-    def __init__(self, pos=[0,0], vel=[0,0]):
+    def __init__(self, pos=(0,0), vel=(0,0)):
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self)
         self.pos = pos
@@ -37,16 +37,20 @@ class GameObject(pygame.sprite.Sprite):
         self.angle = 0
         self.drag = 0.9
 
+    def __str__(self):
+        return f"pos: ({self.pos[0]:.1f}, {self.pos[1]:.1f}, {self.angle:.1f})"
+
     def update(self, *args):
-        self.pos[0] += self.vel[0]
-        self.pos[1] += self.vel[1]
+        x = self.pos[0] + self.vel[0]
+        y = self.pos[1] + self.vel[1]
+        self.pos = (x,y)
 
 
 
 #---- class: Player --------------------------------------------------------
 class Player(GameObject):
 
-    def __init__(self, pos=[0,0]):
+    def __init__(self, pos=(0,0)):
         super().__init__(self)
         self.load_sprite()
         self.pos = pos
@@ -63,15 +67,16 @@ class Player(GameObject):
         img.set_colorkey(VIOLET)
         pts = ( (32, 16), (0, 28), (0, 4) )
         #pts = ( (32, 16), (4, 28), (4, 4) )
-        pygame.draw.polygon(img, GRAY, pts, 4)
+        pygame.draw.polygon(img, WHITE, pts, 4)
         self.image_orig = img
 
 
     def update(self, cmd):
         self.angle += 10 * (cmd['right'] + cmd['left'])
         if cmd['thrust']:
-            self.vel[0] += math.cos(math.radians(self.angle))*0.5
-            self.vel[1] += math.sin(math.radians(self.angle))*0.5
+            dx = self.vel[0] + math.cos(math.radians(self.angle))*0.5
+            dy = self.vel[1] + math.sin(math.radians(self.angle))*0.5
+            self.vel = (dx, dy)
 
         super().update(self)
 
@@ -80,9 +85,11 @@ class Player(GameObject):
         self.rect = self.image.get_rect()
         self.rect.center = [ MAX_X/2, MAX_Y/2 ]
 
+
+#---- class: Asteroid --------------------------------------------------------
 class Asteroid(GameObject):
 
-    def __init__(self, pos=[0,0], vel=[0,0]):
+    def __init__(self, pos=(0,0), vel=(0,0)):
         super().__init__(pos, vel)
         self.load_sprite()
 
@@ -91,7 +98,7 @@ class Asteroid(GameObject):
         img.fill(VIOLET)
         img.set_colorkey(VIOLET)
         pts = ( (31, 31), (0, 31), (0, 0), (31, 0) )
-        pygame.draw.polygon(img, GRAY, pts, 4)
+        pygame.draw.polygon(img, WHITE, pts, 4)
         self.image_orig = img
 
     def update(self, coords):
@@ -102,7 +109,7 @@ class Asteroid(GameObject):
         self.rect = self.image.get_rect()
         x = MAX_X/2 + self.pos[0] - coords[0]
         y = MAX_Y/2 + self.pos[1] - coords[1]
-        self.rect.center = [x, y]
+        self.rect.center = (x, y)
 
 
 ##########################################################################
@@ -159,14 +166,14 @@ def main():
     FONT1 = pygame.font.SysFont('arial', 20)
     FONT2 = pygame.font.SysFont('courier', 15)
 
-    player = Player(pos=[-25,50])
+    player = Player(pos=(-25, 50))
     allsprites = pygame.sprite.Group(player)
 
-    #TODO should have to have both, use tuples?
-    a1 = Asteroid( pos=[0,0], vel=[0,0] )
-    a2 = Asteroid( pos=[0,0], vel=[1,1] )
-    asteroids = pygame.sprite.Group(a1)
-    asteroids.add(a2)
+    asteroids = pygame.sprite.Group()
+    asteroids.add( Asteroid() )
+    asteroids.add( Asteroid(vel=(1,1)) )
+
+    allsprites.add(asteroids)
 
     #main game loop
     while True:
@@ -176,28 +183,19 @@ def main():
         if commands['quit']:
             terminate()
 
-        allsprites.update(commands)
+        player.update(commands)
         asteroids.update(player.pos)
 
         # draw main screen
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
-        asteroids.draw(DISPLAY)
 
-
-        msg = f"pos: ({player.pos[0]:.1f}, {player.pos[1]:.1f}, {player.angle:.1f})"
-        msg_disp = FONT1.render(msg, True, WHITE, BLACK)
-        DISPLAY.blit(msg_disp, (10, 10))
-
-        msg = f"pos: ({a1.pos[0]:.1f}, {a1.pos[1]:.1f}, {a1.angle:.1f})"
-        msg_disp = FONT1.render(msg, True, WHITE, BLACK)
-        DISPLAY.blit(msg_disp, (10, 50))
-
-        msg = f"pos: ({a2.pos[0]:.1f}, {a2.pos[1]:.1f}, {a2.angle:.1f})"
-        msg_disp = FONT1.render(msg, True, WHITE, BLACK)
-        DISPLAY.blit(msg_disp, (10, 100))
-
-
+        i = 0
+        for s in allsprites.sprites():
+            msg = f"pos: ({s.pos[0]:.1f}, {s.pos[1]:.1f}, {s.angle:.1f})"
+            msg_disp = FONT1.render(msg, True, GRAY, BLACK)
+            DISPLAY.blit(msg_disp, (10, 10+i*30))
+            i += 1
 
         # advance game frame
         pygame.display.update()
