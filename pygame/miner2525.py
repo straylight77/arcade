@@ -7,8 +7,6 @@ FPS = 30
 #MAX_X, MAX_Y = 1024, 768
 MAX_X, MAX_Y = 1920, 1024
 
-
-
 WHITE     = (255, 255, 255)
 GRAY      = (128, 128, 128)
 DARKGRAY  = ( 40,  40,  40)
@@ -21,7 +19,7 @@ BLUE      = ( 0,    0, 255)
 VIOLET    = (255,   0, 255)
 BGCOLOR = BLACK
 
-#---- class: GameObject --------------------------------------------------
+#-----------------------------------------------------------------------------
 class GameObject(pygame.sprite.Sprite):
     """
     Base class containing logic for objects in the game. Implements the physics
@@ -65,7 +63,7 @@ class GameObject(pygame.sprite.Sprite):
         self.rect.center = (x, y)
 
 
-#---- class: Player --------------------------------------------------------
+#-----------------------------------------------------------------------------
 class Player(GameObject):
 
     def __init__(self, pos=(0,0)):
@@ -98,7 +96,7 @@ class Player(GameObject):
         self.rect.center = [ MAX_X/2, MAX_Y/2 ]
 
 
-#---- class: Asteroid --------------------------------------------------------
+#-----------------------------------------------------------------------------
 class Asteroid(GameObject):
 
     def __init__(self, pos=(0,0), vel=(0,0)):
@@ -113,7 +111,7 @@ class Asteroid(GameObject):
         self.prep_for_draw(coords)
 
 
-#---- class: Station --------------------------------------------------------
+#-----------------------------------------------------------------------------
 class Station(GameObject):
 
     def __init__(self, pos=(0,0)):
@@ -128,10 +126,10 @@ class Station(GameObject):
         self.prep_for_draw(coords)
 
 
-#-------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 class PolarObject(GameObject):
     """Extension of the base GameObject to use polar coordinates."""
-
+    #TODO add a center position (pos) and refactor into GameObject.
     def __init__(self, angle=0, radius=100, vel=1):
         super().__init__(self)
         self.angle = angle
@@ -150,7 +148,7 @@ class PolarObject(GameObject):
         return (x, y)
 
 
-#-------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 class PolarAsteroid(PolarObject):
 
     def __init__(self, angle=0, radius=100, vel=1):
@@ -219,8 +217,7 @@ def main():
     commands = {'quit': False, 'left': 0, 'right': 0, 'thrust': 0, 'fire': 0}
 
     DISPLAY, CLOCK = init(MAX_X, MAX_Y)
-    FONT1 = pygame.font.SysFont('arial', 20)
-    FONT2 = pygame.font.SysFont('courier', 15)
+    FONT = pygame.font.SysFont('arial', 20)
 
     player = Player()
     allsprites = pygame.sprite.Group(player)
@@ -231,17 +228,15 @@ def main():
     asteroids = pygame.sprite.Group()
     asteroids.add( Asteroid(vel=(-1,0.5), pos=(300,-250)) )
     asteroids.add( Asteroid(vel=(1,0.5)) )
-    allsprites.add(asteroids)
 
-    asteroids2 = pygame.sprite.Group()
-    for n in range(1,8):
+    for n in range(8):
         a = random.randint(0, 360)
         r = random.randint(200, 500)
         v = random.randint(25, 150) / 100.0
         p = PolarAsteroid(angle=a, radius=r, vel=v)
-        asteroids2.add(p)
+        asteroids.add(p)
 
-    allsprites.add(asteroids2)
+    allsprites.add(asteroids)
 
     #main game loop
     while True:
@@ -254,7 +249,6 @@ def main():
         player.update(commands)
         asteroids.update(player.pos)
         station.update(player.pos)
-        asteroids2.update(player.pos)
 
         # draw main screen
         DISPLAY.fill(BGCOLOR)
@@ -262,7 +256,7 @@ def main():
 
         i = 0
         for s in allsprites.sprites():
-            msg_disp = FONT1.render(f"{i}: {s}", True, GRAY, BLACK)
+            msg_disp = FONT.render(f"{i}: {s}", True, GRAY, BLACK)
             DISPLAY.blit(msg_disp, (10, 10+i*30))
             i += 1
 
