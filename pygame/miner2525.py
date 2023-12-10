@@ -4,8 +4,10 @@ import pygame, sys, math, random
 from pygame.locals import *
 
 FPS = 30
-MAX_X = 1024
-MAX_Y = 768
+#MAX_X, MAX_Y = 1024, 768
+MAX_X, MAX_Y = 1920, 1024
+
+
 
 WHITE     = (255, 255, 255)
 GRAY      = (128, 128, 128)
@@ -38,7 +40,7 @@ class GameObject(pygame.sprite.Sprite):
         self.drag = 0.9
 
     def __str__(self):
-        return f"pos: ({self.pos[0]:.1f}, {self.pos[1]:.1f}, {self.angle:.1f})"
+        return f"(x={self.pos[0]:.1f}, y={self.pos[1]:.1f}, angle={self.angle:.1f})"
 
     def update(self, *args):
         x = self.pos[0] + self.vel[0]
@@ -135,6 +137,9 @@ class PolarObject(GameObject):
         self.angle = angle
         self.radius = radius
         self.vel = vel
+
+    def __str__(self):
+        return f"(angle={self.angle:.1f}, rad={self.radius:.1f}, vel={self.vel:.1f})"
 
     def update(self):
         self.angle += self.vel
@@ -238,7 +243,6 @@ def main():
 
     allsprites.add(asteroids2)
 
-
     #main game loop
     while True:
 
@@ -256,18 +260,11 @@ def main():
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
 
-        #i = 0
-        #for s in asteroids.sprites():
-        #    msg = f"{i}: ({s.pos[0]:.1f}, {s.pos[1]:.1f}, {s.angle:.1f})"
-        #    msg_disp = FONT1.render(msg, True, RED, BLACK)
-        #    DISPLAY.blit(msg_disp, (10, 10+i*30))
-        #    i += 1
-
-        #for s in asteroids2.sprites():
-        #    msg = f"{i}: ({s.angle:.1f}, {s.radius:.1f}, {s.vel:.1f})"
-        #    msg_disp = FONT1.render(msg, True, YELLOW, BLACK)
-        #    DISPLAY.blit(msg_disp, (10, 10+i*30))
-        #    i += 1
+        i = 0
+        for s in allsprites.sprites():
+            msg_disp = FONT1.render(f"{i}: {s}", True, GRAY, BLACK)
+            DISPLAY.blit(msg_disp, (10, 10+i*30))
+            i += 1
 
         # advance game frame
         pygame.display.update()
