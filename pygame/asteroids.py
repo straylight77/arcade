@@ -4,8 +4,7 @@ import pygame, sys, math, random
 from pygame.locals import *
 
 FPS = 30
-MAX_X = 1920
-MAX_Y = 1024
+MAX_X, MAX_Y = 1024, 768
 
 #C_MAIN    = (128, 128, 128)
 C_MAIN    = (192, 192, 192)
@@ -20,38 +19,36 @@ class GameObject(pygame.sprite.Sprite):
     Base class containing logic for objects in the game. Implements the physics
     of position and velocity.
     """
-    def __init__(self, pos=[0,0], vel=[0,0]):
+    def __init__(self, pos=(0,0), vel=(0,0)):
         pygame.sprite.Sprite.__init__(self)
-        self.pos = pos
-        self.vel = vel
+        self.pos_x = pos[0]
+        self.pos_y = pos[1]
+        self.vel_x = vel[0]
+        self.vel_y = vel[1]
         self.angle = 0
 
     def update(self, *args):
-        self.pos[0] += self.vel[0]
-        self.pos[1] += self.vel[1]
+        self.pos_x += self.vel_x
+        self.pos_y += self.vel_y
         self.check_boundry()
         self.prepare_for_draw()
 
     def check_boundry(self):
-        self.pos[0] %= MAX_X
-        self.pos[1] %= MAX_Y
+        self.pos_x %= MAX_X
+        self.pos_y %= MAX_Y
         self.angle %= 360
 
     def prepare_for_draw(self):
         self.image = pygame.transform.rotate(self.image_orig, -self.angle)
         self.rect = self.image.get_rect()
-        self.rect.center = self.pos
+        self.rect.center = (self.pos_x, self.pos_y)
 
-    def create_sprite(self, size=(32,32), pts=None ):
+    def create_sprite(self, size=32, pts=None ):
         if pts is None:
+            w = size-3
             # minus 3 because of the line thickness
-            pts = (
-                (0,            0),
-                (0,            size[1]-3),
-                (size[0]-3,    size[1]-3),
-                (size[0]-3,0), (0,0)
-            )
-        img = pygame.Surface(size)
+            pts = ((0, 0),(0, w),(w, w),(w, 0))
+        img = pygame.Surface((size,size))
         img.fill(C_KEY)
         img.set_colorkey(C_KEY)
         pygame.draw.polygon(img, C_MAIN, pts, 3)
@@ -64,12 +61,13 @@ class Ship(GameObject):
 
     def __init__(self):
         GameObject.__init__(self)
-        self.create_sprite( size=(32,32), pts=((32,16), (0,28), (0,4)) )
+        self.create_sprite( size=32, pts=((32,16), (0,28), (0,4)) )
         self.reset()
         self.prepare_for_draw()
 
     def reset(self):
-        self.pos = [MAX_X/2, MAX_Y/2]
+        self.pos_x = MAX_X/2
+        self.pos_y = MAX_Y/2
         self.angle = 270
 
 
@@ -79,8 +77,8 @@ class Ship(GameObject):
         # 0.98 -> drag coeffecient
         self.angle += 10 * (cmd['right'] + cmd['left'])
         if cmd['thrust']:
-            self.vel[0] += math.cos(math.radians(self.angle)) * 0.5
-            self.vel[1] += math.sin(math.radians(self.angle)) * 0.5
+            self.vel_x += math.cos(math.radians(self.angle)) * 0.5
+            self.vel_y += math.sin(math.radians(self.angle)) * 0.5
         #else:
         #    self.vel[0] *= 0.98
         #    self.vel[1] *= 0.98
@@ -90,29 +88,29 @@ class Ship(GameObject):
 #---- class: Asteroid ----------------------------------------------------
 class Asteroid(GameObject):
 
-    def __init__(self, pos=[0,0], vel=[0,0]):
+    def __init__(self, pos=(0,0), vel=(0,0)):
         GameObject.__init__(self, pos, vel)
 
 
 class SmallAsteroid(Asteroid):
 
-    def __init__(self, pos, vel=[0,0]):
+    def __init__(self, pos, vel=(0,0)):
         Asteroid.__init__(self, pos, vel)
-        self.create_sprite( (32,32) )
+        self.create_sprite(32)
 
 
 class MediumAsteroid(Asteroid):
 
-    def __init__(self, pos, vel=[0,0]):
+    def __init__(self, pos, vel=(0,0)):
         Asteroid.__init__(self, pos, vel)
-        self.create_sprite( (64,64) )
+        self.create_sprite(64)
 
 
 class LargeAsteroid(Asteroid):
 
-    def __init__(self, pos, vel=[0,0]):
+    def __init__(self, pos, vel=(0,0)):
         Asteroid.__init__(self, pos, vel)
-        self.create_sprite( (128,128) )
+        self.create_sprite(128)
 
 
 #---- class: Shot -------------------------------------------------------
@@ -181,9 +179,9 @@ def main():
     FONT2 = pygame.font.SysFont('courier', 15)
 
     asteroids = pygame.sprite.RenderPlain()
-    asteroids.add( LargeAsteroid([MAX_X/4, MAX_Y/4]) )
-    asteroids.add( MediumAsteroid([MAX_X*3/4, MAX_Y/4]) )
-    asteroids.add( SmallAsteroid([MAX_X*3/4, MAX_Y*3/4]) )
+    asteroids.add( LargeAsteroid((MAX_X/4, MAX_Y/4)) )
+    asteroids.add( MediumAsteroid((MAX_X*3/4, MAX_Y/4)) )
+    asteroids.add( SmallAsteroid((MAX_X*3/4, MAX_Y*3/4)) )
     ship = Ship()
     allsprites = pygame.sprite.Group(ship)
 
