@@ -68,6 +68,11 @@ class GameObject(pygame.sprite.Sprite):
         y = self.pos[1] - origin[1]
         return (x, y)
 
+    def get_distance_from(self, point):
+        dx = point[0] - self.pos[0]
+        dy = point[1] - self.pos[1]
+        return math.sqrt(dx**2 + dy**2)
+
 
 #-----------------------------------------------------------------------------
 class Player(GameObject):
@@ -222,23 +227,26 @@ def draw_hud(disp, player):
 
 
 def draw_radar_hud(disp):
-    #TODO make this transparent (alpha channel?)
-    radius = 200
-    center = (radius+10, radius+10)
-    pygame.draw.circle(disp, DARKGRAY, center, radius)             # background
-    pygame.draw.circle(disp, GRAY, center, radius, width=2)        # outer circle
-    pygame.draw.circle(disp, GRAY, center, 50, width=1)         # inner circle
-    #pygame.draw.line(disp, GRAY, (250, 240), (250, 260), width=2)   # crosshair
-    #pygame.draw.line(disp, GRAY, (240, 250), (260, 250), width=2)
+    r = 200
+    s = pygame.Surface((r*2, r*2))
+    s.set_alpha(192)
+    s.fill(VIOLET)
+    s.set_colorkey(VIOLET)
+    pygame.draw.circle(s, DARKGRAY, (r,r), r)               # background
+    pygame.draw.circle(s, GRAY, (r,r), r, width=2)      # outer circle
+    pygame.draw.circle(s, GRAY, (r,r), 50, width=1)     # inner circle
+    pygame.draw.line(s, GRAY, (r-10,r), (r+10,r), width=1)
+    pygame.draw.line(s, GRAY, (r,r-10), (r,r+10), width=1)
+    disp.blit(s, (10, 10))
 
 
-def draw_radar_objects(disp, player, objects, color, width):
-    #TODO check distance of objects so they don't display off the radar
+def draw_radar_objects(disp, player, objects, color, r):
     #TODO show arrow towards station when it goes off the radar (?)
     for obj in objects:
-        x = 210 + (obj.pos[0] - player.pos[0]) / 10
-        y = 210 + (obj.pos[1] - player.pos[1]) / 10
-        pygame.draw.circle(disp, color, (x, y), width)
+        if obj.get_distance_from(player.pos) < 2000:
+            x = 210 + (obj.pos[0] - player.pos[0]) / 10
+            y = 210 + (obj.pos[1] - player.pos[1]) / 10
+            pygame.draw.circle(disp, color, (x, y), r, width=2)
 
 
 
@@ -288,7 +296,7 @@ def main():
         draw_radar_hud(DISPLAY)
         draw_radar_objects(DISPLAY, player, asteroids.sprites(), RED, 2)
         draw_radar_objects(DISPLAY, player, [station], BLUE, 6)
-        draw_radar_objects(DISPLAY, player, [player], WHITE, 3)
+        #draw_radar_objects(DISPLAY, player, [player], WHITE, 3)
 
         i = 0
         for s in allsprites.sprites():
