@@ -9,15 +9,16 @@ MAX_X, MAX_Y = 1920, 1024
 
 WHITE     = (255, 255, 255)
 GRAY      = (128, 128, 128)
-DARKGRAY  = ( 40,  40,  40)
+DARKGRAY  = ( 30,  30,  30)
 BLACK     = (  0,   0,   0)
 RED       = (255,   0,   0)
 ORANGE    = (255, 128,   0)
 YELLOW    = (255, 255,   0)
 GREEN     = (40,  255,   0)
-BLUE      = ( 0,    0, 255)
+BLUE      = (64,   64, 255)
 VIOLET    = (255,   0, 255)
 BGCOLOR = BLACK
+
 
 #-----------------------------------------------------------------------------
 class GameObject(pygame.sprite.Sprite):
@@ -61,6 +62,11 @@ class GameObject(pygame.sprite.Sprite):
         x = MAX_X/2 + self.pos[0] - offset[0]
         y = MAX_Y/2 + self.pos[1] - offset[1]
         self.rect.center = (x, y)
+
+    def get_relative_pos(self, origin):
+        x = self.pos[0] - origin[0]
+        y = self.pos[1] - origin[1]
+        return (x, y)
 
 
 #-----------------------------------------------------------------------------
@@ -160,13 +166,13 @@ class PolarAsteroid(PolarObject):
 
     def update(self, coords):
         super().update()
+        self.pos = self.get_xy()
 
         # prep for draw
         #self.image = pygame.transform.rotate(self.image_orig, -self.angle)
         self.rect = self.image.get_rect()
-        pos = self.get_xy()
-        x = MAX_X/2 + pos[0] - coords[0]
-        y = MAX_Y/2 + pos[1] - coords[1]
+        x = MAX_X/2 + self.pos[0] - coords[0]
+        y = MAX_Y/2 + self.pos[1] - coords[1]
         self.rect.center = (x, y)
 
 
@@ -211,6 +217,30 @@ def handle_events(cmd):
                 cmd['thrust'] = 0
 
 
+def draw_hud(disp, player):
+    pygame.draw.circle(disp, DARKGRAY, (MAX_X/2, MAX_Y/2), 500, width=1)
+
+
+def draw_radar_hud(disp):
+    #TODO make this transparent (alpha channel?)
+    radius = 200
+    center = (radius+10, radius+10)
+    pygame.draw.circle(disp, DARKGRAY, center, radius)             # background
+    pygame.draw.circle(disp, GRAY, center, radius, width=2)        # outer circle
+    pygame.draw.circle(disp, GRAY, center, 50, width=1)         # inner circle
+    #pygame.draw.line(disp, GRAY, (250, 240), (250, 260), width=2)   # crosshair
+    #pygame.draw.line(disp, GRAY, (240, 250), (260, 250), width=2)
+
+
+def draw_radar_objects(disp, player, objects, color, width):
+    #TODO check distance of objects so they don't display off the radar
+    #TODO show arrow towards station when it goes off the radar (?)
+    for obj in objects:
+        x = 210 + (obj.pos[0] - player.pos[0]) / 10
+        y = 210 + (obj.pos[1] - player.pos[1]) / 10
+        pygame.draw.circle(disp, color, (x, y), width)
+
+
 
 #---- main() -------------------------------------------------------------
 def main():
@@ -231,7 +261,7 @@ def main():
 
     for n in range(8):
         a = random.randint(0, 360)
-        r = random.randint(200, 500)
+        r = random.randint(600, 1000)
         v = random.randint(25, 150) / 100.0
         p = PolarAsteroid(angle=a, radius=r, vel=v)
         asteroids.add(p)
@@ -254,11 +284,18 @@ def main():
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
 
+        draw_hud(DISPLAY, player)
+        draw_radar_hud(DISPLAY)
+        draw_radar_objects(DISPLAY, player, asteroids.sprites(), RED, 2)
+        draw_radar_objects(DISPLAY, player, [station], BLUE, 6)
+        draw_radar_objects(DISPLAY, player, [player], WHITE, 3)
+
         i = 0
         for s in allsprites.sprites():
             msg_disp = FONT.render(f"{i}: {s}", True, GRAY, BLACK)
-            DISPLAY.blit(msg_disp, (10, 10+i*30))
+            #DISPLAY.blit(msg_disp, (10, 10+i*30))
             i += 1
+
 
         # advance game frame
         pygame.display.update()
