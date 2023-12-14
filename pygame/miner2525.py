@@ -23,14 +23,8 @@ BGCOLOR = BLACK
 
 #-----------------------------------------------------------------------------
 class GameObject(pygame.sprite.Sprite):
-    """
-    Base class containing logic for objects in the game. Implements the physics
-    of position (pos) and velocity (vel) within the game world.
-    pos ->
-    vel ->
-    angle ->
-    drag ->
-    """
+    """Base class containing logic for objects in the game. Implements the physics
+    of position (pos) and velocity (vel) within the game world."""
 
     def __init__(self, pos=(0,0), vel=(0,0)):
         pygame.sprite.Sprite.__init__(self)
@@ -91,7 +85,6 @@ class Player(GameObject):
     def load_sprite(self):
         pts = ( (32, 16), (0, 28), (0, 4) )
         super().load_sprite(32, pts, GRAY)
-
 
     def update(self, cmd):
         self.angle += 10 * (cmd['right'] + cmd['left'])
@@ -224,7 +217,11 @@ def handle_events(cmd):
 
 
 def draw_hud(disp, player):
-    pygame.draw.circle(disp, DARKGRAY, (MAX_X/2, MAX_Y/2), 500, width=1)
+    #pygame.draw.circle(disp, DARKGRAY, (MAX_X/2, MAX_Y/2), 500, width=1)
+    FONT = pygame.font.SysFont('arial', 20)
+    msg_disp = FONT.render(f"({player.pos[0]:.0f}, {player.pos[1]:.0f})", True, GRAY, BLACK)
+    w = msg_disp.get_width()
+    disp.blit(msg_disp, (210-w/2, 420))
 
 
 def draw_radar_hud(disp):
@@ -237,10 +234,10 @@ def draw_radar_hud(disp):
     pygame.draw.circle(s, GRAY, (r,r), r, width=2)      # outer circle
     #pygame.draw.circle(s, GRAY, (r,r), 50, width=1)     # inner circle
     pts =[
-        (r-MAX_X/2/10, r-MAX_Y/2/10),
-        (r+MAX_X/2/10, r-MAX_Y/2/10),
-        (r+MAX_X/2/10, r+MAX_Y/2/10),
-        (r-MAX_X/2/10, r+MAX_Y/2/10)
+        (r-MAX_X/2/20, r-MAX_Y/2/20),
+        (r+MAX_X/2/20, r-MAX_Y/2/20),
+        (r+MAX_X/2/20, r+MAX_Y/2/20),
+        (r-MAX_X/2/20, r+MAX_Y/2/20)
     ]
     pygame.draw.polygon(s, GRAY, pts, 2)  # rectangle to show the viewport
     pygame.draw.line(s, GRAY, (r-10,r), (r+10,r), width=1)  # crosshairs
@@ -250,10 +247,11 @@ def draw_radar_hud(disp):
 
 def draw_radar_objects(disp, player, objects, color, r):
     #TODO show arrow towards station when it goes off the radar (?)
+    scale = 10
     for obj in objects:
-        if obj.get_distance_from(player.pos) < 2000:
-            x = 210 + (obj.pos[0] - player.pos[0]) / 10
-            y = 210 + (obj.pos[1] - player.pos[1]) / 10
+        if obj.get_distance_from(player.pos) < 4000:
+            x = 210 + (obj.pos[0] - player.pos[0]) / 20
+            y = 210 + (obj.pos[1] - player.pos[1]) / 20
             pygame.draw.circle(disp, color, (x, y), r, width=2)
 
 
@@ -300,7 +298,7 @@ def main():
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
 
-        #draw_hud(DISPLAY, player)
+        draw_hud(DISPLAY, player)
         draw_radar_hud(DISPLAY)
         draw_radar_objects(DISPLAY, player, asteroids.sprites(), RED, 2)
         draw_radar_objects(DISPLAY, player, [station], BLUE, 6)
@@ -311,7 +309,6 @@ def main():
             msg_disp = FONT.render(f"{i}: {s}", True, GRAY, BLACK)
             #DISPLAY.blit(msg_disp, (10, 10+i*30))
             i += 1
-
 
         # advance game frame
         pygame.display.update()
