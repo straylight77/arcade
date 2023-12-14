@@ -4,8 +4,9 @@ import pygame, sys, math, random
 from pygame.locals import *
 
 FPS = 30
-#MAX_X, MAX_Y = 1024, 768
-MAX_X, MAX_Y = 1920, 1024
+#MAX_X, MAX_Y = 1024, 768   # XGA
+#MAX_X, MAX_Y = 1280, 720   # HD (720p)
+MAX_X, MAX_Y = 1920, 1024   # Full HD
 
 WHITE     = (255, 255, 255)
 GRAY      = (128, 128, 128)
@@ -234,8 +235,15 @@ def draw_radar_hud(disp):
     s.set_colorkey(VIOLET)
     pygame.draw.circle(s, DARKGRAY, (r,r), r)               # background
     pygame.draw.circle(s, GRAY, (r,r), r, width=2)      # outer circle
-    pygame.draw.circle(s, GRAY, (r,r), 50, width=1)     # inner circle
-    pygame.draw.line(s, GRAY, (r-10,r), (r+10,r), width=1)
+    #pygame.draw.circle(s, GRAY, (r,r), 50, width=1)     # inner circle
+    pts =[
+        (r-MAX_X/2/10, r-MAX_Y/2/10),
+        (r+MAX_X/2/10, r-MAX_Y/2/10),
+        (r+MAX_X/2/10, r+MAX_Y/2/10),
+        (r-MAX_X/2/10, r+MAX_Y/2/10)
+    ]
+    pygame.draw.polygon(s, GRAY, pts, 2)  # rectangle to show the viewport
+    pygame.draw.line(s, GRAY, (r-10,r), (r+10,r), width=1)  # crosshairs
     pygame.draw.line(s, GRAY, (r,r-10), (r,r+10), width=1)
     disp.blit(s, (10, 10))
 
@@ -292,7 +300,7 @@ def main():
         DISPLAY.fill(BGCOLOR)
         allsprites.draw(DISPLAY)
 
-        draw_hud(DISPLAY, player)
+        #draw_hud(DISPLAY, player)
         draw_radar_hud(DISPLAY)
         draw_radar_objects(DISPLAY, player, asteroids.sprites(), RED, 2)
         draw_radar_objects(DISPLAY, player, [station], BLUE, 6)
