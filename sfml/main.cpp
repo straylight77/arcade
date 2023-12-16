@@ -38,7 +38,6 @@ class Player : public sf::ConvexShape
 		void update(map<string, int> &ctrl)
 		{
 			angle += (ctrl["right"] - ctrl["left"]) * 8.f;
-
 			if (ctrl["thrust"])
 			{
 				vel_x += cos(angle * M_PI / 180.0) * 0.5;
@@ -78,20 +77,20 @@ int main()
 	sf::RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids");
 	window.setFramerateLimit(FPS);
 
-	map<string, int> control;
-	control["quit"] = 0;
-	control["left"] = 0;
-	control["right"] = 0;
-	control["thrust"] = 0;
-	control["fire"] = 0;
+	map<string, int> controls;
+	controls["quit"] = 0;
+	controls["left"] = 0;
+	controls["right"] = 0;
+	controls["thrust"] = 0;
+	controls["fire"] = 0;
 
-	Player p;
+	Player player;
 	sf::Event event;
 
-	sf::Clock clock;
-
-	while (window.isOpen() && !control["quit"])
+	// main game loop
+	while (window.isOpen() && !controls["quit"])
 	{
+		// handle events and update the user controls
 		while (window.pollEvent(event))
 		{
 			switch (event.type)
@@ -104,10 +103,10 @@ int main()
 
 					switch(event.key.code)
 					{
-						case sf::Keyboard::Escape:  control["quit"] = 1; break;
-						case sf::Keyboard::Left:    control["left"] = 1; break;
-						case sf::Keyboard::Right:   control["right"] = 1; break;
-						case sf::Keyboard::Up:      control["thrust"] = 1; break;
+						case sf::Keyboard::Escape:  controls["quit"] = 1; break;
+						case sf::Keyboard::Left:    controls["left"] = 1; break;
+						case sf::Keyboard::Right:   controls["right"] = 1; break;
+						case sf::Keyboard::Up:      controls["thrust"] = 1; break;
 						default:
 							break;
 					}
@@ -116,10 +115,10 @@ int main()
 				case sf::Event::KeyReleased:
 					switch(event.key.code)
 					{
-						case sf::Keyboard::Escape:  control["quit"] = 0; break;
-						case sf::Keyboard::Left:    control["left"] = 0; break;
-						case sf::Keyboard::Right:   control["right"] = 0; break;
-						case sf::Keyboard::Up:      control["thrust"] = 0; break;
+						case sf::Keyboard::Escape:  controls["quit"] = 0; break;
+						case sf::Keyboard::Left:    controls["left"] = 0; break;
+						case sf::Keyboard::Right:   controls["right"] = 0; break;
+						case sf::Keyboard::Up:      controls["thrust"] = 0; break;
 						default:
 							break;
 					}
@@ -131,10 +130,12 @@ int main()
 
 		}
 
-		p.update(control);
+		// update the game world
+		player.update(controls);
 
+		// render
 		window.clear();
-		window.draw(p);
+		window.draw(player);
 		window.display();
 	}
 
