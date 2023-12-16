@@ -9,22 +9,53 @@ const int MAX_X = 1024;
 const int MAX_Y = 768;
 const int FPS = 30;
 
-//----------------------------------------
-class Player : public sf::ConvexShape
+
+//------------------------------------------------------------------------
+class GameObject
 {
 	public:
+
 		float pos_x, pos_y;
 		float vel_x, vel_y;
 		float angle;
 
-		Player() : sf::ConvexShape()
+		GameObject(float x, float y, float a=0, float dx=0, float dy=0)
 		{
-			pos_x = MAX_X / 2.0f;
-			pos_y = MAX_Y / 2.0f;
-			vel_x = 0.0f;
-			vel_y = 0.0f;
-			angle = -90.0f;
+			pos_x = x;
+			pos_y = y;
+			vel_x = dx;
+			vel_y = dy;
+			angle = a;
+		}
 
+		void update()
+		{
+			pos_x += vel_x;
+			pos_y += vel_y;
+			check_boundry();
+		}
+
+	protected:
+
+		void check_boundry()
+		{
+			if (pos_x > MAX_X)  pos_x = pos_x - MAX_X;
+			if (pos_x < 0)      pos_x = MAX_X - pos_x;
+
+			if (pos_y > MAX_Y)  pos_y = pos_y - MAX_Y;
+			if (pos_y < 0)      pos_y = MAX_Y - pos_y;
+
+			angle = (int) angle % 360;
+		}
+
+};
+
+//------------------------------------------------------------------------
+class Player : public GameObject, public sf::ConvexShape
+{
+	public:
+		Player() : GameObject(MAX_X/2.0, MAX_Y/2.0, -90), sf::ConvexShape()
+		{
 			setPointCount(3);
 			setPoint(0, sf::Vector2f(20, 0));
 			setPoint(1, sf::Vector2f(-10, 10));
@@ -44,28 +75,12 @@ class Player : public sf::ConvexShape
 				vel_y += sin(angle * M_PI / 180.0) * 0.5;
 			}
 
-			pos_x += vel_x;
-			pos_y += vel_y;
-			check_boundry();
+			GameObject::update();
 
 			// prep for draw
 			setRotation(angle);
 			setPosition(pos_x, pos_y);
 		}
-
-	private:
-
-		void check_boundry()
-		{
-			if (pos_x > MAX_X)  pos_x = pos_x - MAX_X;
-			if (pos_x < 0)      pos_x = MAX_X - pos_x;
-
-			if (pos_y > MAX_Y)  pos_y = pos_y - MAX_Y;
-			if (pos_y < 0)      pos_y = MAX_Y - pos_y;
-
-			//angle = (int) angle % 360;
-		}
-
 
 };
 
@@ -86,6 +101,7 @@ int main()
 
 	Player player;
 	sf::Event event;
+	sf::Clock clock;
 
 	// main game loop
 	while (window.isOpen() && !controls["quit"])
@@ -131,6 +147,8 @@ int main()
 		}
 
 		// update the game world
+		//sf::Time elapsed = clock.restart();
+		//player.update(controls, elapsed.asSeconds());
 		player.update(controls);
 
 		// render
