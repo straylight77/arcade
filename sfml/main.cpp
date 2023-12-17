@@ -1,5 +1,6 @@
 #include <iostream>
 #include <map>
+#include <list>
 #include <cmath>
 #include <SFML/Graphics.hpp>
 
@@ -17,15 +18,13 @@ class GameObject
 
 		float pos_x, pos_y;
 		float vel_x, vel_y;
-		float angle;
 
-		GameObject(float x, float y, float a=0, float dx=0, float dy=0)
+		GameObject(float x, float y, float dx=0, float dy=0)
 		{
 			pos_x = x;
 			pos_y = y;
 			vel_x = dx;
 			vel_y = dy;
-			angle = a;
 		}
 
 		void update()
@@ -44,8 +43,6 @@ class GameObject
 
 			if (pos_y > MAX_Y)  pos_y = pos_y - MAX_Y;
 			if (pos_y < 0)      pos_y = MAX_Y - pos_y;
-
-			angle = (int) angle % 360;
 		}
 
 };
@@ -54,8 +51,13 @@ class GameObject
 class Player : public GameObject, public sf::ConvexShape
 {
 	public:
-		Player() : GameObject(MAX_X/2.0, MAX_Y/2.0, -90), sf::ConvexShape()
+
+		float angle;
+
+		Player() : GameObject(MAX_X/2.0, MAX_Y/2.0), sf::ConvexShape()
 		{
+			angle = -90.0;
+
 			setPointCount(3);
 			setPoint(0, sf::Vector2f(20, 0));
 			setPoint(1, sf::Vector2f(-10, 10));
@@ -76,12 +78,38 @@ class Player : public GameObject, public sf::ConvexShape
 			}
 
 			GameObject::update();
+			angle = (int) angle % 360;
 
 			// prep for draw
 			setRotation(angle);
 			setPosition(pos_x, pos_y);
 		}
 
+};
+
+
+class Asteroid : public GameObject, public sf::CircleShape
+{
+	public:
+
+		Asteroid(float r, float x, float y, float dx = 0, float dy = 0) :
+			GameObject(x, y, dx, dy),
+			sf::CircleShape()
+		{
+			setRadius(r);
+			setPointCount(5);
+			setFillColor(sf::Color::Black);
+			setOutlineThickness(3.0);
+			setOrigin(r, r);
+		}
+
+		void update()
+		{
+			GameObject::update();
+			// prep for draw
+			setPosition(pos_x, pos_y);
+
+		}
 };
 
 
@@ -100,6 +128,9 @@ int main()
 	controls["fire"] = 0;
 
 	Player player;
+	//list<Asteroid> asteroids;
+	Asteroid a1(60, 200, 250, 5, 3);
+	Asteroid a2(60, 800, 400, -3, 3);
 	sf::Event event;
 	sf::Clock clock;
 
@@ -150,9 +181,13 @@ int main()
 		//sf::Time elapsed = clock.restart();
 		//player.update(controls, elapsed.asSeconds());
 		player.update(controls);
+		a1.update();
+		a2.update();
 
 		// render
 		window.clear();
+		window.draw(a1);
+		window.draw(a2);
 		window.draw(player);
 		window.display();
 	}
