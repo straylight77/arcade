@@ -12,46 +12,26 @@ const int FPS = 30;
 
 
 //------------------------------------------------------------------------
-class Player : public sf::ConvexShape
+class GameObject
 {
 	public:
 
+		sf::ConvexShape shape;
 		sf::Vector2f vel;
 
-		Player(sf::Vector2f p, float a, sf::Vector2f v) :
+		GameObject(sf::Vector2f p, float a, sf::Vector2f v) :
+			shape(),
 			vel(v)
 		{
-			setPointCount(3);
-			setPoint(0, sf::Vector2f(20, 0));
-			setPoint(1, sf::Vector2f(-10, 10));
-			setPoint(2, sf::Vector2f(-10, -10));
-			setFillColor(sf::Color::Black);
-			setOutlineColor(sf::Color::White);
-			setOutlineThickness(2.0f);
-			setOrigin(0, 0);
-			setPosition(p);
-			setRotation(-90.0);
+			shape.setPosition(p);
+			shape.setRotation(a);
 		}
 
-		void update(map<string, int> &ctrl)
+	protected:
+
+		void checkBoundary(float padding)
 		{
-			rotate( (ctrl["right"] - ctrl["left"]) * 8.0);
-			float angle = getRotation();
-
-			if (ctrl["thrust"])
-			{
-				vel.x += cos(angle * M_PI / 180.0) * 0.5;
-				vel.y += sin(angle * M_PI / 180.0) * 0.5;
-			}
-			move(vel);
-			check_boundary(10);
-		}
-
-	private:
-
-		void check_boundary(float padding)
-		{
-			sf::Vector2f pos = getPosition();
+			sf::Vector2f pos = shape.getPosition();
 
 			if (pos.x + padding < 0)           pos.x = MAX_X + padding;    // left side
 			else if (pos.x - padding > MAX_X)  pos.x = -padding;	       // right side
@@ -59,64 +39,76 @@ class Player : public sf::ConvexShape
 			if (pos.y + padding < 0)           pos.y = MAX_Y + padding;    // top
 			else if (pos.y - padding > MAX_Y)  pos.y = -padding;           // bottom
 
-			setPosition(pos);
+			shape.setPosition(pos);
+		}
+};
+
+
+//------------------------------------------------------------------------
+class Player : public GameObject
+{
+	public:
+
+		Player(sf::Vector2f p, float a, sf::Vector2f v) :
+			GameObject(p, a, v)
+		{
+			shape.setPointCount(3);
+			shape.setPoint(0, sf::Vector2f(20, 0));
+			shape.setPoint(1, sf::Vector2f(-10, 10));
+			shape.setPoint(2, sf::Vector2f(-10, -10));
+			shape.setFillColor(sf::Color::Black);
+			shape.setOutlineColor(sf::Color::White);
+			shape.setOutlineThickness(2.0f);
+			shape.setOrigin(0, 0);
+		}
+
+		void update(map<string, int> &ctrl)
+		{
+			shape.rotate( (ctrl["right"] - ctrl["left"]) * 8.0);
+			float angle = shape.getRotation();
+
+			if (ctrl["thrust"])
+			{
+				vel.x += cos(angle * M_PI / 180.0) * 0.5;
+				vel.y += sin(angle * M_PI / 180.0) * 0.5;
+			}
+			shape.move(vel);
+			checkBoundary(10);
 		}
 
 };
 
 
 //------------------------------------------------------------------------
-class Asteroid : public sf::ConvexShape
+class Asteroid : public GameObject
 {
 	public:
 
-		sf::Vector2f vel;
-
 		Asteroid(float r, sf::Vector2f p, sf::Vector2f v) :
-			vel(v)
+			GameObject(p, 0, v)
 		{
-			setPointCount(10);
-			setPoint(0, sf::Vector2f(60, -20));
-			setPoint(1, sf::Vector2f(40, -40));
-			setPoint(2, sf::Vector2f(20, -60));
-			setPoint(3, sf::Vector2f(-20, -60));
-			setPoint(4, sf::Vector2f(-40, -40));
-			setPoint(5, sf::Vector2f(-60, -20));
-			setPoint(6, sf::Vector2f(-60, 20));
-			setPoint(7, sf::Vector2f(-40, 40));
-			setPoint(8, sf::Vector2f(-20, 60));
-			setPoint(9, sf::Vector2f(20, 60));
-			setFillColor(sf::Color::Black);
-			setOutlineThickness(3.0);
-			setOrigin(r, r);
-			setPosition(p);
+			shape.setPointCount(10);
+			shape.setPoint(0, sf::Vector2f(60, -20));
+			shape.setPoint(1, sf::Vector2f(40, -40));
+			shape.setPoint(2, sf::Vector2f(20, -60));
+			shape.setPoint(3, sf::Vector2f(-20, -60));
+			shape.setPoint(4, sf::Vector2f(-40, -40));
+			shape.setPoint(5, sf::Vector2f(-60, -20));
+			shape.setPoint(6, sf::Vector2f(-60, 20));
+			shape.setPoint(7, sf::Vector2f(-40, 40));
+			shape.setPoint(8, sf::Vector2f(-20, 60));
+			shape.setPoint(9, sf::Vector2f(20, 60));
+			shape.setFillColor(sf::Color::Black);
+			shape.setOutlineThickness(3.0);
+			shape.setOrigin(r, r);
 		}
 
 		void update()
 		{
-			move(vel);
-			check_boundary();
+			shape.move(vel);
+			checkBoundary(120);
 		}
-
-	private:
-
-		void check_boundary()
-		{
-			sf::Vector2f pos = getPosition();
-			float r = 120;
-
-			if (pos.x + r < 0)          pos.x = MAX_X + r;    // left side
-			else if (pos.x -r > MAX_X)  pos.x = -r;	          // right side
-
-			if (pos.y + r < 0)          pos.y = MAX_Y + r;    // top
-			else if (pos.y -r > MAX_Y)  pos.y = -r;           // bottom
-
-			setPosition(pos);
-		}
-
 };
-
-
 
 
 
@@ -197,9 +189,9 @@ int main()
 		window.clear();
 		for (auto& a : asteroids)
 		{
-			window.draw(a);
+			window.draw(a.shape);
 		}
-		window.draw(player);
+		window.draw(player.shape);
 		window.display();
 	}
 
