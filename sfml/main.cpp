@@ -128,9 +128,11 @@ int main()
 	controls["fire"] = 0;
 
 	Player player;
-	//list<Asteroid> asteroids;
-	Asteroid a1(60, 200, 250, 5, 3);
-	Asteroid a2(60, 800, 400, -3, 3);
+
+	vector<Asteroid> asteroids;
+	asteroids.emplace_back(60, 200, 250, 5, 3);
+	asteroids.emplace_back(60, 800, 400, -3, 3);
+
 	sf::Event event;
 	sf::Clock clock;
 
@@ -178,16 +180,18 @@ int main()
 		}
 
 		// update the game world
-		//sf::Time elapsed = clock.restart();
-		//player.update(controls, elapsed.asSeconds());
 		player.update(controls);
-		a1.update();
-		a2.update();
+		for (auto& a : asteroids)
+		{
+			a.update();
+		}
 
 		// render
 		window.clear();
-		window.draw(a1);
-		window.draw(a2);
+		for (auto& a : asteroids)
+		{
+			window.draw(a);
+		}
 		window.draw(player);
 		window.display();
 	}
