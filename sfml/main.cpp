@@ -1,6 +1,5 @@
 #include <iostream>
 #include <map>
-#include <list>
 #include <cmath>
 #include <SFML/Graphics.hpp>
 
@@ -9,6 +8,72 @@ using namespace std;
 const int MAX_X = 1024;
 const int MAX_Y = 768;
 const int FPS = 30;
+
+
+//------------------------------------------------------------------------
+class GameControls
+{
+	public:
+
+		GameControls()
+		{
+			controls["quit"] = 0;
+			controls["left"] = 0;
+			controls["right"] = 0;
+			controls["thrust"] = 0;
+			controls["fire"] = 0;
+		}
+
+		int getState(string cmd)
+		{
+			return controls[cmd];
+		}
+
+		void setState(string cmd, int val)
+		{
+			controls[cmd] = val;
+		}
+
+		string mapKeyToControl(sf::Keyboard::Key key)
+		{
+			switch(key)
+			{
+				case sf::Keyboard::Escape:  return "quit"; break;
+				case sf::Keyboard::Left:    return "left"; break;
+				case sf::Keyboard::Right:   return "right"; break;
+				case sf::Keyboard::Up:      return "thrust"; break;
+				default:					return "unknown"; break;
+			}
+		}
+
+		void handleEvent(sf::Event event)
+		{
+			string cmd;
+			switch (event.type)
+			{
+				case sf::Event::Closed:
+					//window.close();
+					controls["quit"] = 1;
+					break;
+
+				case sf::Event::KeyPressed:
+					cmd = mapKeyToControl(event.key.code);
+					setState(cmd, 1);
+					break;
+
+				case sf::Event::KeyReleased:
+					cmd = mapKeyToControl(event.key.code);
+					setState(cmd, 0);
+					break;
+
+				default:
+					break;
+			}
+		}
+
+	private:
+		map<string, int> controls;
+};
 
 
 //------------------------------------------------------------------------
@@ -62,12 +127,12 @@ class Player : public GameObject
 			shape.setOrigin(0, 0);
 		}
 
-		void update(map<string, int> &ctrl)
+		void update(GameControls &ctrl)
 		{
-			shape.rotate( (ctrl["right"] - ctrl["left"]) * 8.0);
+			shape.rotate( (ctrl.getState("right") - ctrl.getState("left")) * 8.0);
 			float angle = shape.getRotation();
 
-			if (ctrl["thrust"])
+			if (ctrl.getState("thrust"))
 			{
 				vel.x += cos(angle * M_PI / 180.0) * 0.5;
 				vel.y += sin(angle * M_PI / 180.0) * 0.5;
@@ -75,7 +140,6 @@ class Player : public GameObject
 			shape.move(vel);
 			checkBoundary(10);
 		}
-
 };
 
 
@@ -111,86 +175,44 @@ class Asteroid : public GameObject
 };
 
 
-
 /*****************************************************/
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids");
 	window.setFramerateLimit(FPS);
 
-	map<string, int> controls;
-	controls["quit"] = 0;
-	controls["left"] = 0;
-	controls["right"] = 0;
-	controls["thrust"] = 0;
-	controls["fire"] = 0;
+	GameControls controls;
 
+	// initialize game objects
 	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), -90, sf::Vector2f(0, 0));
-
 	vector<Asteroid> asteroids;
 	asteroids.emplace_back(60, sf::Vector2f(200, 250), sf::Vector2f(0, -5));
 	asteroids.emplace_back(60, sf::Vector2f(200, 400), sf::Vector2f(5, 0));
-
 
 	sf::Event event;
 	sf::Clock clock;
 
 	// main game loop
-	while (window.isOpen() && !controls["quit"])
+	while (window.isOpen() && !controls.getState("quit"))
 	{
 		// handle events and update the user controls
 		while (window.pollEvent(event))
 		{
-			switch (event.type)
-			{
-				case sf::Event::Closed:
-					window.close();
-					break;
+			controls.handleEvent(event);
 
-				case sf::Event::KeyPressed:
-
-					switch(event.key.code)
-					{
-						case sf::Keyboard::Escape:  controls["quit"] = 1; break;
-						case sf::Keyboard::Left:    controls["left"] = 1; break;
-						case sf::Keyboard::Right:   controls["right"] = 1; break;
-						case sf::Keyboard::Up:      controls["thrust"] = 1; break;
-						default:
-							break;
-					}
-					break;
-
-				case sf::Event::KeyReleased:
-					switch(event.key.code)
-					{
-						case sf::Keyboard::Escape:  controls["quit"] = 0; break;
-						case sf::Keyboard::Left:    controls["left"] = 0; break;
-						case sf::Keyboard::Right:   controls["right"] = 0; break;
-						case sf::Keyboard::Up:      controls["thrust"] = 0; break;
-						default:
-							break;
-					}
-					break;
-
-				default:
-					break;
-			}
-
+			if (controls.getState("quit"))
+				window.close();
 		}
 
 		// update the game world
-		player.update(controls);
 		for (auto& a : asteroids)
-		{
 			a.update();
-		}
+		player.update(controls);
 
 		// render
 		window.clear();
 		for (auto& a : asteroids)
-		{
 			window.draw(a.shape);
-		}
 		window.draw(player.shape);
 		window.display();
 	}
