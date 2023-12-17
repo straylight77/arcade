@@ -12,52 +12,15 @@ const int FPS = 30;
 
 
 //------------------------------------------------------------------------
-class GameObject
+class Player : public sf::ConvexShape
 {
 	public:
 
-		float pos_x, pos_y;
-		float vel_x, vel_y;
+		sf::Vector2f vel;
 
-		GameObject(float x, float y, float dx=0, float dy=0)
+		Player(sf::Vector2f p, float a, sf::Vector2f v) :
+			vel(v)
 		{
-			pos_x = x;
-			pos_y = y;
-			vel_x = dx;
-			vel_y = dy;
-		}
-
-		void update()
-		{
-			pos_x += vel_x;
-			pos_y += vel_y;
-			check_boundry();
-		}
-
-	protected:
-
-		void check_boundry()
-		{
-			if (pos_x > MAX_X)  pos_x = pos_x - MAX_X;
-			if (pos_x < 0)      pos_x = MAX_X - pos_x;
-
-			if (pos_y > MAX_Y)  pos_y = pos_y - MAX_Y;
-			if (pos_y < 0)      pos_y = MAX_Y - pos_y;
-		}
-
-};
-
-//------------------------------------------------------------------------
-class Player : public GameObject, public sf::ConvexShape
-{
-	public:
-
-		float angle;
-
-		Player() : GameObject(MAX_X/2.0, MAX_Y/2.0), sf::ConvexShape()
-		{
-			angle = -90.0;
-
 			setPointCount(3);
 			setPoint(0, sf::Vector2f(20, 0));
 			setPoint(1, sf::Vector2f(-10, 10));
@@ -66,51 +29,94 @@ class Player : public GameObject, public sf::ConvexShape
 			setOutlineColor(sf::Color::White);
 			setOutlineThickness(2.0f);
 			setOrigin(0, 0);
+			setPosition(p);
+			setRotation(-90.0);
 		}
 
 		void update(map<string, int> &ctrl)
 		{
-			angle += (ctrl["right"] - ctrl["left"]) * 8.f;
+			rotate( (ctrl["right"] - ctrl["left"]) * 8.0);
+			float angle = getRotation();
+
 			if (ctrl["thrust"])
 			{
-				vel_x += cos(angle * M_PI / 180.0) * 0.5;
-				vel_y += sin(angle * M_PI / 180.0) * 0.5;
+				vel.x += cos(angle * M_PI / 180.0) * 0.5;
+				vel.y += sin(angle * M_PI / 180.0) * 0.5;
 			}
+			move(vel);
+			check_boundary(10);
+		}
 
-			GameObject::update();
-			angle = (int) angle % 360;
+	private:
 
-			// prep for draw
-			setRotation(angle);
-			setPosition(pos_x, pos_y);
+		void check_boundary(float padding)
+		{
+			sf::Vector2f pos = getPosition();
+
+			if (pos.x + padding < 0)           pos.x = MAX_X + padding;    // left side
+			else if (pos.x - padding > MAX_X)  pos.x = -padding;	       // right side
+
+			if (pos.y + padding < 0)           pos.y = MAX_Y + padding;    // top
+			else if (pos.y - padding > MAX_Y)  pos.y = -padding;           // bottom
+
+			setPosition(pos);
 		}
 
 };
 
 
-class Asteroid : public GameObject, public sf::CircleShape
+//------------------------------------------------------------------------
+class Asteroid : public sf::ConvexShape
 {
 	public:
 
-		Asteroid(float r, float x, float y, float dx = 0, float dy = 0) :
-			GameObject(x, y, dx, dy),
-			sf::CircleShape()
+		sf::Vector2f vel;
+
+		Asteroid(float r, sf::Vector2f p, sf::Vector2f v) :
+			vel(v)
 		{
-			setRadius(r);
-			setPointCount(5);
+			setPointCount(10);
+			setPoint(0, sf::Vector2f(60, -20));
+			setPoint(1, sf::Vector2f(40, -40));
+			setPoint(2, sf::Vector2f(20, -60));
+			setPoint(3, sf::Vector2f(-20, -60));
+			setPoint(4, sf::Vector2f(-40, -40));
+			setPoint(5, sf::Vector2f(-60, -20));
+			setPoint(6, sf::Vector2f(-60, 20));
+			setPoint(7, sf::Vector2f(-40, 40));
+			setPoint(8, sf::Vector2f(-20, 60));
+			setPoint(9, sf::Vector2f(20, 60));
 			setFillColor(sf::Color::Black);
 			setOutlineThickness(3.0);
 			setOrigin(r, r);
+			setPosition(p);
 		}
 
 		void update()
 		{
-			GameObject::update();
-			// prep for draw
-			setPosition(pos_x, pos_y);
-
+			move(vel);
+			check_boundary();
 		}
+
+	private:
+
+		void check_boundary()
+		{
+			sf::Vector2f pos = getPosition();
+			float r = 120;
+
+			if (pos.x + r < 0)          pos.x = MAX_X + r;    // left side
+			else if (pos.x -r > MAX_X)  pos.x = -r;	          // right side
+
+			if (pos.y + r < 0)          pos.y = MAX_Y + r;    // top
+			else if (pos.y -r > MAX_Y)  pos.y = -r;           // bottom
+
+			setPosition(pos);
+		}
+
 };
+
+
 
 
 
@@ -127,11 +133,12 @@ int main()
 	controls["thrust"] = 0;
 	controls["fire"] = 0;
 
-	Player player;
+	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), -90, sf::Vector2f(0, 0));
 
 	vector<Asteroid> asteroids;
-	asteroids.emplace_back(60, 200, 250, 5, 3);
-	asteroids.emplace_back(60, 800, 400, -3, 3);
+	asteroids.emplace_back(60, sf::Vector2f(200, 250), sf::Vector2f(0, -5));
+	asteroids.emplace_back(60, sf::Vector2f(200, 400), sf::Vector2f(5, 0));
+
 
 	sf::Event event;
 	sf::Clock clock;
