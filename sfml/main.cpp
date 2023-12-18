@@ -38,11 +38,12 @@ class GameControls
 		{
 			switch(key)
 			{
-				case sf::Keyboard::Escape:  return "quit"; break;
-				case sf::Keyboard::Left:    return "left"; break;
-				case sf::Keyboard::Right:   return "right"; break;
-				case sf::Keyboard::Up:      return "thrust"; break;
-				default:					return "unknown"; break;
+				case sf::Keyboard::Escape:		return "quit"; break;
+				case sf::Keyboard::Left:		return "left"; break;
+				case sf::Keyboard::Right:		return "right"; break;
+				case sf::Keyboard::Up:			return "thrust"; break;
+				case sf::Keyboard::LControl:	return "fire"; break;
+				default:						return "unknown"; break;
 			}
 		}
 
@@ -84,25 +85,44 @@ class GameObject
 		sf::ConvexShape shape;
 		sf::Vector2f vel;
 
-		GameObject(sf::Vector2f p, float a, sf::Vector2f v) :
-			shape(),
-			vel(v)
+		GameObject(sf::Vector2f p, sf::Vector2f v)
 		{
 			shape.setPosition(p);
-			shape.setRotation(a);
+			vel = v;
+		}
+
+		GameObject(sf::Vector2f p, float angle, float speed)
+		{
+			shape.setPosition(p);
+			float x = cos(angle * M_PI / 180.0) * speed;
+			float y = sin(angle * M_PI / 180.0) * speed;
+			vel = sf::Vector2f(x, y);
+		}
+
+		void update()
+		{
+			shape.move(vel);
+			checkBoundary();
+		}
+
+		sf::FloatRect getHitbox()
+		{
+			return shape.getGlobalBounds();
 		}
 
 	protected:
 
-		void checkBoundary(float padding)
+		void checkBoundary()
 		{
 			sf::Vector2f pos = shape.getPosition();
+			int width = shape.getGlobalBounds().width;
+			int height = shape.getGlobalBounds().height;
 
-			if (pos.x + padding < 0)           pos.x = MAX_X + padding;    // left side
-			else if (pos.x - padding > MAX_X)  pos.x = -padding;	       // right side
+			if (pos.x + width < 0)           pos.x = MAX_X + width;    // left side
+			else if (pos.x - width > MAX_X)  pos.x = -width;	       // right side
 
-			if (pos.y + padding < 0)           pos.y = MAX_Y + padding;    // top
-			else if (pos.y - padding > MAX_Y)  pos.y = -padding;           // bottom
+			if (pos.y + height < 0)           pos.y = MAX_Y + height;    // top
+			else if (pos.y - height > MAX_Y)  pos.y = -height;           // bottom
 
 			shape.setPosition(pos);
 		}
@@ -114,8 +134,8 @@ class Player : public GameObject
 {
 	public:
 
-		Player(sf::Vector2f p, float a, sf::Vector2f v) :
-			GameObject(p, a, v)
+		Player(sf::Vector2f p, sf::Vector2f v) :
+			GameObject(p, v)
 		{
 			shape.setPointCount(3);
 			shape.setPoint(0, sf::Vector2f(20, 0));
@@ -125,6 +145,8 @@ class Player : public GameObject
 			shape.setOutlineColor(sf::Color::White);
 			shape.setOutlineThickness(2.0f);
 			shape.setOrigin(0, 0);
+
+			shape.setRotation(-90);
 		}
 
 		void update(GameControls &ctrl)
@@ -137,8 +159,7 @@ class Player : public GameObject
 				vel.x += cos(angle * M_PI / 180.0) * 0.5;
 				vel.y += sin(angle * M_PI / 180.0) * 0.5;
 			}
-			shape.move(vel);
-			checkBoundary(10);
+			GameObject::update();
 		}
 };
 
@@ -149,7 +170,7 @@ class Asteroid : public GameObject
 	public:
 
 		Asteroid(float r, sf::Vector2f p, sf::Vector2f v) :
-			GameObject(p, 0, v)
+			GameObject(p, v)
 		{
 			shape.setPointCount(10);
 			shape.setPoint(0, sf::Vector2f(60, -20));
@@ -167,12 +188,27 @@ class Asteroid : public GameObject
 			shape.setOrigin(r, r);
 		}
 
-		void update()
-		{
-			shape.move(vel);
-			checkBoundary(120);
-		}
 };
+
+
+//------------------------------------------------------------------------
+class Shot : public GameObject
+{
+	public:
+
+		Shot(sf::Vector2f p, float angle, float speed) :
+			GameObject(p, angle, speed)
+		{
+			shape.setPointCount(4);
+			shape.setPoint(0, sf::Vector2f(-1.5, -1.5));
+			shape.setPoint(1, sf::Vector2f(-1.5, 1.5));
+			shape.setPoint(2, sf::Vector2f(1.5, 1.5));
+			shape.setPoint(3, sf::Vector2f(1.5, -1.5));
+			shape.setOrigin(0, 0);
+		}
+
+};
+
 
 
 /*****************************************************/
@@ -184,13 +220,17 @@ int main()
 	GameControls controls;
 
 	// initialize game objects
-	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), -90, sf::Vector2f(0, 0));
+	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0));
 	vector<Asteroid> asteroids;
 	asteroids.emplace_back(60, sf::Vector2f(200, 250), sf::Vector2f(0, -5));
 	asteroids.emplace_back(60, sf::Vector2f(200, 400), sf::Vector2f(5, 0));
 
+	Shot shot(sf::Vector2f(MAX_X/2, MAX_Y/2), 90, 20);
+
 	sf::Event event;
 	sf::Clock clock;
+
+	sf::FloatRect player_box, a_box;
 
 	// main game loop
 	while (window.isOpen() && !controls.getState("quit"))
@@ -208,11 +248,35 @@ int main()
 		for (auto& a : asteroids)
 			a.update();
 		player.update(controls);
+		shot.update();
+
+		if (controls.getState("fire"))
+		{
+			//memory management?
+			shot = Shot(player.shape.getPosition(), player.shape.getRotation(), 20.f);
+
+			controls.setState("fire", 0);
+		}
+
+
+
+		// check for collisions with the player
+		//player_box = player.getHitbox();
+		//for (auto& a : asteroids)
+		//{
+		//	a_box = a.getHitbox();
+		//	if (player_box.intersects(a_box))
+		//	{
+		//		cout << "Hit by asteroid!";
+		//		controls.setState("quit", 1);
+		//	}
+		//}
 
 		// render
 		window.clear();
 		for (auto& a : asteroids)
 			window.draw(a.shape);
+		window.draw(shot.shape);
 		window.draw(player.shape);
 		window.display();
 	}
