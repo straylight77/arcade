@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <map>
 #include <cmath>
 #include <SFML/Graphics.hpp>
@@ -99,6 +100,16 @@ class GameObject
 			vel = sf::Vector2f(x, y);
 		}
 
+		sf::Vector2f getPos()
+		{
+			return shape.getPosition();
+		}
+
+		float getAngle()
+		{
+			return shape.getRotation();
+		}
+
 		void update()
 		{
 			shape.move(vel);
@@ -195,17 +206,29 @@ class Asteroid : public GameObject
 class Shot : public GameObject
 {
 	public:
+		bool is_done;
+		int time_to_live; // in frames
 
-		Shot(sf::Vector2f p, float angle, float speed) :
+		Shot(sf::Vector2f p, float angle, float speed = 20.f) :
 			GameObject(p, angle, speed)
 		{
 			shape.setPointCount(4);
-			shape.setPoint(0, sf::Vector2f(-1.5, -1.5));
-			shape.setPoint(1, sf::Vector2f(-1.5, 1.5));
-			shape.setPoint(2, sf::Vector2f(1.5, 1.5));
-			shape.setPoint(3, sf::Vector2f(1.5, -1.5));
+			shape.setPoint(0, sf::Vector2f(-2.5, -2.5));
+			shape.setPoint(1, sf::Vector2f(-2.5, 2.5));
+			shape.setPoint(2, sf::Vector2f(2.5, 2.5));
+			shape.setPoint(3, sf::Vector2f(2.5, -2.5));
 			shape.setOrigin(0, 0);
+			is_done = false;
+			time_to_live = FPS;  // FPS * seconds of real-time
 		}
+
+		void update()
+		{
+			//GameObject::update();
+			shape.move(vel);
+			time_to_live--;
+		}
+
 
 };
 
@@ -221,11 +244,12 @@ int main()
 
 	// initialize game objects
 	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0));
+	vector<std::shared_ptr<Shot>> shots;
+
 	vector<Asteroid> asteroids;
 	asteroids.emplace_back(60, sf::Vector2f(200, 250), sf::Vector2f(0, -5));
 	asteroids.emplace_back(60, sf::Vector2f(200, 400), sf::Vector2f(5, 0));
 
-	Shot shot(sf::Vector2f(MAX_X/2, MAX_Y/2), 90, 20);
 
 	sf::Event event;
 	sf::Clock clock;
@@ -247,17 +271,28 @@ int main()
 		// update the game world
 		for (auto& a : asteroids)
 			a.update();
+
+		for (auto s = shots.begin(); s != shots.end(); /* no increment here */)
+		{
+			(*s)->update();
+
+			if ((*s)->time_to_live <= 0) {
+				s = shots.erase(s); // Efficient removal using iterator
+			} else {
+				++s;
+			}
+		}
+
 		player.update(controls);
-		shot.update();
 
 		if (controls.getState("fire"))
 		{
-			//memory management?
-			shot = Shot(player.shape.getPosition(), player.shape.getRotation(), 20.f);
-
-			controls.setState("fire", 0);
+			if (shots.size() < 3) // limit number of active shots
+			{
+				shots.push_back(std::make_shared<Shot>( player.getPos(), player.getAngle() ));
+				controls.setState("fire", 0);
+			}
 		}
-
 
 
 		// check for collisions with the player
@@ -276,7 +311,8 @@ int main()
 		window.clear();
 		for (auto& a : asteroids)
 			window.draw(a.shape);
-		window.draw(shot.shape);
+		for (auto& s : shots)
+			window.draw(s->shape);
 		window.draw(player.shape);
 		window.display();
 	}
