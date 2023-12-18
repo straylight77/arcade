@@ -86,6 +86,8 @@ class GameObject
 		sf::ConvexShape shape;
 		sf::Vector2f vel;
 
+		GameObject() { }
+
 		GameObject(sf::Vector2f p, sf::Vector2f v)
 		{
 			shape.setPosition(p);
@@ -95,19 +97,10 @@ class GameObject
 		GameObject(sf::Vector2f p, float angle, float speed)
 		{
 			shape.setPosition(p);
+			shape.setRotation(angle);
 			float x = cos(angle * M_PI / 180.0) * speed;
 			float y = sin(angle * M_PI / 180.0) * speed;
 			vel = sf::Vector2f(x, y);
-		}
-
-		sf::Vector2f getPos()
-		{
-			return shape.getPosition();
-		}
-
-		float getAngle()
-		{
-			return shape.getRotation();
 		}
 
 		void update()
@@ -116,10 +109,12 @@ class GameObject
 			checkBoundary();
 		}
 
-		sf::FloatRect getHitbox()
-		{
-			return shape.getGlobalBounds();
-		}
+		sf::Vector2f getPos() { return shape.getPosition(); }
+		float getAngle() { return shape.getRotation(); }
+		float getSpeed() { return sqrt(pow(vel.x, 2) + pow(vel.y, 2)); }
+		float getDirection() { return atan(vel.y/vel.x) * 180.0 / M_PI; }
+
+		sf::FloatRect getHitbox() { return shape.getGlobalBounds(); }
 
 	protected:
 
@@ -129,8 +124,8 @@ class GameObject
 			int width = shape.getGlobalBounds().width;
 			int height = shape.getGlobalBounds().height;
 
-			if (pos.x + width < 0)           pos.x = MAX_X + width;    // left side
-			else if (pos.x - width > MAX_X)  pos.x = -width;	       // right side
+			if (pos.x + width < 0)            pos.x = MAX_X + width;     // left side
+			else if (pos.x - width > MAX_X)   pos.x = -width;	         // right side
 
 			if (pos.y + height < 0)           pos.y = MAX_Y + height;    // top
 			else if (pos.y - height > MAX_Y)  pos.y = -height;           // bottom
@@ -154,7 +149,7 @@ class Player : public GameObject
 			shape.setPoint(2, sf::Vector2f(-10, -10));
 			shape.setFillColor(sf::Color::Black);
 			shape.setOutlineColor(sf::Color::White);
-			shape.setOutlineThickness(2.0f);
+			shape.setOutlineThickness(3.0f);
 			shape.setOrigin(0, 0);
 
 			shape.setRotation(-90);
@@ -180,8 +175,34 @@ class Asteroid : public GameObject
 {
 	public:
 
-		Asteroid(float r, sf::Vector2f p, sf::Vector2f v) :
+		int stage;
+
+		Asteroid(int s, sf::Vector2f p, sf::Vector2f v) :
 			GameObject(p, v)
+		{
+			stage = s;
+			loadShape(s);
+		}
+
+		Asteroid(int s, sf::Vector2f p, float angle, float speed) :
+			GameObject(p, angle, speed)
+		{
+			stage = s;
+			loadShape(s);
+		}
+
+
+		Asteroid(int s) :
+			Asteroid(s, getRandomPos(), getRandomDirection(), getRandomSpeed(2, 8))
+		{
+			stage = s;
+			loadShape(s);
+		}
+
+
+	private:
+
+		void loadShape(int stage)
 		{
 			shape.setPointCount(10);
 			shape.setPoint(0, sf::Vector2f(60, -20));
@@ -196,9 +217,46 @@ class Asteroid : public GameObject
 			shape.setPoint(9, sf::Vector2f(20, 60));
 			shape.setFillColor(sf::Color::Black);
 			shape.setOutlineThickness(3.0);
-			shape.setOrigin(r, r);
+			shape.setOrigin(0, 0);
+
+			float scale = 1.0;
+			switch (stage) {
+				case 3:  scale = 1.0; break;
+				case 2:  scale = 0.66; break;
+				case 1:  scale = 0.33; break;
+				default:
+						break;
+			}
+
+			shape.setScale( scale, scale );
 		}
 
+		static sf::Vector2f getRandomPos()
+		{
+			// Set a random position within the window bounds
+			float posX = static_cast<float>(std::rand() % MAX_X);  // Adjust window width
+			float posY = static_cast<float>(std::rand() % MAX_Y);  // Adjust window height
+			return sf::Vector2f(posX, posY);
+		}
+
+		static sf::Vector2f getRandomVel()
+		{
+			// Set a random velocity
+			float velX = static_cast<float>(std::rand() % 11) - 5; // Random value between -5 and 5
+			float velY = static_cast<float>(std::rand() % 11) - 5; // Random value between -5 and 5
+
+			return sf::Vector2f(velX, velY);
+		}
+
+		static float getRandomDirection()
+		{
+			return static_cast<float>(std::rand() % 360);
+		}
+
+		static float getRandomSpeed(int low, int high)
+		{
+			return static_cast<float>((rand() % (high - low + 1)) + low);
+		}
 };
 
 
@@ -239,6 +297,7 @@ int main()
 {
 	sf::RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids");
 	window.setFramerateLimit(FPS);
+	std::srand(static_cast<unsigned>(std::time(nullptr)));
 
 	GameControls controls;
 
@@ -246,15 +305,14 @@ int main()
 	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0));
 	vector<std::shared_ptr<Shot>> shots;
 
-	vector<Asteroid> asteroids;
-	asteroids.emplace_back(60, sf::Vector2f(200, 250), sf::Vector2f(0, -5));
-	asteroids.emplace_back(60, sf::Vector2f(200, 400), sf::Vector2f(5, 0));
-
+	vector<std::shared_ptr<Asteroid>> asteroids;
+	asteroids.push_back(std::make_shared<Asteroid>(2));
+	asteroids.push_back(std::make_shared<Asteroid>(3));
 
 	sf::Event event;
 	sf::Clock clock;
 
-	sf::FloatRect player_box, a_box;
+	sf::FloatRect box1, box2;
 
 	// main game loop
 	while (window.isOpen() && !controls.getState("quit"))
@@ -270,9 +328,9 @@ int main()
 
 		// update the game world
 		for (auto& a : asteroids)
-			a.update();
+			a->update();
 
-		for (auto s = shots.begin(); s != shots.end(); /* no increment here */)
+		for (auto s = shots.begin(); s != shots.end(); /* no increment */)
 		{
 			(*s)->update();
 
@@ -295,24 +353,49 @@ int main()
 		}
 
 
-		// check for collisions with the player
-		//player_box = player.getHitbox();
-		//for (auto& a : asteroids)
-		//{
-		//	a_box = a.getHitbox();
-		//	if (player_box.intersects(a_box))
-		//	{
-		//		cout << "Hit by asteroid!";
-		//		controls.setState("quit", 1);
-		//	}
-		//}
+		// collision detection
+		std::vector<std::shared_ptr<Asteroid>> new_asteroids;
+		for (auto s = shots.begin(); s != shots.end(); /* no increment */)
+		{
+			box1 = (*s)->getHitbox();
+
+			bool collision = false;
+
+			for (auto a = asteroids.begin(); a != asteroids.end(); /* no increment */)
+			{
+				box2 = (*a)->getHitbox();
+				if (box1.intersects(box2))
+				{
+					int new_stage = (*a)->stage - 1;
+					if (new_stage >= 1)
+					{
+						sf::Vector2f new_pos = (*a)->getPos();
+						float new_speed = (*a)->getSpeed();
+						float new_angle = (*a)->getDirection();
+						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-90.0, new_speed));
+						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+90.0, new_speed));
+					}
+					a = asteroids.erase(a);
+					collision = true;
+				}
+				else
+				{
+					++a;
+				}
+			}
+
+			if (collision)
+				s = shots.erase(s);
+			else
+				++s;
+		}
+		asteroids.insert(asteroids.end(), new_asteroids.begin(), new_asteroids.end());
+
 
 		// render
 		window.clear();
-		for (auto& a : asteroids)
-			window.draw(a.shape);
-		for (auto& s : shots)
-			window.draw(s->shape);
+		for (auto& a : asteroids)  window.draw(a->shape);
+		for (auto& s : shots)      window.draw(s->shape);
 		window.draw(player.shape);
 		window.display();
 	}
