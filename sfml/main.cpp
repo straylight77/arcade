@@ -114,8 +114,8 @@ class GameObject
 		void checkBoundary()
 		{
 			sf::Vector2f pos = shape.getPosition();
-			int width = shape.getGlobalBounds().width;
-			int height = shape.getGlobalBounds().height;
+			int width = shape.getGlobalBounds().width / 2;
+			int height = shape.getGlobalBounds().height / 2;
 
 			if (pos.x + width < 0)            pos.x = MAX_X + width;     // left side
 			else if (pos.x - width > MAX_X)   pos.x = -width;	         // right side
