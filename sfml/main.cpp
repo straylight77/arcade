@@ -25,15 +25,8 @@ class GameControls
 			controls["fire"] = 0;
 		}
 
-		int getState(string cmd)
-		{
-			return controls[cmd];
-		}
-
-		void setState(string cmd, int val)
-		{
-			controls[cmd] = val;
-		}
+		int getState(string cmd)			{ return controls[cmd]; }
+		void setState(string cmd, int val)	{ controls[cmd] = val; }
 
 		string mapKeyToControl(sf::Keyboard::Key key)
 		{
@@ -109,10 +102,10 @@ class GameObject
 			checkBoundary();
 		}
 
-		sf::Vector2f getPos() { return shape.getPosition(); }
-		float getAngle() { return shape.getRotation(); }
-		float getSpeed() { return sqrt(pow(vel.x, 2) + pow(vel.y, 2)); }
-		float getDirection() { return atan(vel.y/vel.x) * 180.0 / M_PI; }
+		sf::Vector2f getPos()  { return shape.getPosition(); }
+		float getAngle()       { return shape.getRotation(); }
+		float getSpeed()       { return hypot(vel.x, vel.y); }
+		float getDirection()   { return atan2(vel.y, vel.x) * 180.0 / M_PI; }
 
 		sf::FloatRect getHitbox() { return shape.getGlobalBounds(); }
 
@@ -191,14 +184,10 @@ class Asteroid : public GameObject
 			loadShape(s);
 		}
 
-
 		Asteroid(int s) :
 			Asteroid(s, getRandomPos(), getRandomDirection(), getRandomSpeed(2, 8))
 		{
-			stage = s;
-			loadShape(s);
 		}
-
 
 	private:
 
@@ -264,7 +253,6 @@ class Asteroid : public GameObject
 class Shot : public GameObject
 {
 	public:
-		bool is_done;
 		int time_to_live; // in frames
 
 		Shot(sf::Vector2f p, float angle, float speed = 20.f) :
@@ -276,7 +264,6 @@ class Shot : public GameObject
 			shape.setPoint(2, sf::Vector2f(2.5, 2.5));
 			shape.setPoint(3, sf::Vector2f(2.5, -2.5));
 			shape.setOrigin(0, 0);
-			is_done = false;
 			time_to_live = FPS;  // FPS * seconds of real-time
 		}
 
@@ -297,11 +284,27 @@ int main()
 {
 	sf::RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids");
 	window.setFramerateLimit(FPS);
-	std::srand(static_cast<unsigned>(std::time(nullptr)));
+	srand(static_cast<unsigned>(time(nullptr)));
 
 	GameControls controls;
 
+	sf::Font font;
+	//string font_path = "/usr/share/fonts/chromeos/roboto/Roboto-Light.ttf";
+	string font_path = "/usr/share/fonts/chromeos/monotype/verdana.ttf";
+	if (!font.loadFromFile(font_path))
+	{
+		cout << "Error loading font.\n";
+		return 1;
+	}
+	sf::Text info_text;
+	info_text.setFont(font);
+	info_text.setCharacterSize(32);
+	info_text.setFillColor(sf::Color(192, 192, 192));
+
 	// initialize game objects
+	int score = 0;
+	int lives = 3;
+	int level = 1;
 	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0));
 	vector<std::shared_ptr<Shot>> shots;
 
@@ -370,11 +373,12 @@ int main()
 					if (new_stage >= 1)
 					{
 						sf::Vector2f new_pos = (*a)->getPos();
-						float new_speed = (*a)->getSpeed();
+						float new_speed = (*a)->getSpeed();  // make the new ones go faster?
 						float new_angle = (*a)->getDirection();
-						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-90.0, new_speed));
-						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+90.0, new_speed));
+						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-55.0, new_speed));
+						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+55.0, new_speed));
 					}
+					score += 100;
 					a = asteroids.erase(a);
 					collision = true;
 				}
@@ -391,12 +395,19 @@ int main()
 		}
 		asteroids.insert(asteroids.end(), new_asteroids.begin(), new_asteroids.end());
 
+		info_text.setString(
+			"Level: " + to_string(level)
+			+ "     Score: " + to_string(score)
+			+ "     Lives: " + to_string(lives)
+			+ "     Asteroids: " + to_string((int)asteroids.size())
+		);
 
 		// render
 		window.clear();
 		for (auto& a : asteroids)  window.draw(a->shape);
 		for (auto& s : shots)      window.draw(s->shape);
 		window.draw(player.shape);
+		window.draw(info_text);
 		window.display();
 	}
 
