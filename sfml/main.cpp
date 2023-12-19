@@ -186,38 +186,37 @@ class Asteroid : public GameObject
 
 		Asteroid(int s) :
 			Asteroid(s, getRandomPos(), getRandomDirection(), getRandomSpeed(2, 8))
-		{
-		}
+		{ }
 
 	private:
 
 		void loadShape(int stage)
 		{
-			shape.setPointCount(10);
-			shape.setPoint(0, sf::Vector2f(60, -20));
-			shape.setPoint(1, sf::Vector2f(40, -40));
-			shape.setPoint(2, sf::Vector2f(20, -60));
-			shape.setPoint(3, sf::Vector2f(-20, -60));
-			shape.setPoint(4, sf::Vector2f(-40, -40));
-			shape.setPoint(5, sf::Vector2f(-60, -20));
-			shape.setPoint(6, sf::Vector2f(-60, 20));
-			shape.setPoint(7, sf::Vector2f(-40, 40));
-			shape.setPoint(8, sf::Vector2f(-20, 60));
-			shape.setPoint(9, sf::Vector2f(20, 60));
-			shape.setFillColor(sf::Color::Black);
-			shape.setOutlineThickness(3.0);
-			shape.setOrigin(0, 0);
-
-			float scale = 1.0;
-			switch (stage) {
-				case 3:  scale = 1.0; break;
-				case 2:  scale = 0.66; break;
-				case 1:  scale = 0.33; break;
-				default:
-						break;
+			// Set the number of points based on the stage
+			int count;
+			switch (stage)
+			{
+				case 3: count = 9; break;
+				case 2: count = 7; break;
+				case 1: count = 5; break;
+				default: count = 4; break;
 			}
 
-			shape.setScale( scale, scale );
+			// Set the points for the shape
+			shape.setPointCount(count);
+			for (int i = 0; i < count; ++i)
+			{
+				float angle = i * (360.0f / count);
+				float radius = stage * 20.0f;
+				shape.setPoint(i, sf::Vector2f(
+							radius * std::cos(angle * M_PI / 180.0f),
+							radius * std::sin(angle * M_PI / 180.0f)
+							));
+			}
+
+			shape.setFillColor(sf::Color::Black);
+			shape.setOutlineThickness(3.0f);
+			shape.setOrigin(0, 0);
 		}
 
 		static sf::Vector2f getRandomPos()
