@@ -1,4 +1,3 @@
-#include <iostream>
 #include <memory>
 #include <map>
 #include <cmath>
@@ -201,7 +200,7 @@ class Asteroid : public GameObject
 		}
 
 		Asteroid(int s) :
-			Asteroid(s, getRandomPos(), getRandomDirection(), getRandomSpeed(2, 8))
+			Asteroid(s, getRandomPos(), getRandomDirection(), getRandomSpeed(4, 6))
 		{ }
 
 	private:
@@ -370,9 +369,11 @@ class Game
 			info_text.setFont(font);
 			info_text.setCharacterSize(32);
 			info_text.setFillColor(sf::Color(192, 192, 192));
-	
+			big_text.setFont(font);
+			big_text.setCharacterSize(64);
+			big_text.setFillColor(sf::Color(192, 192, 192));
+
 			create_level();
-			cout << "In Game constructor\n";
 		}
 
 		//----------------------------------------------------------------
@@ -382,6 +383,8 @@ class Game
 			{
 				handle_input();
 				update();
+
+				window.clear();
 				if (lives > 0)
 				{
 					asteroid_shot_collisions();
@@ -402,20 +405,45 @@ class Game
 						player.reset();
 					}
 				}
+				else
+				{
+					// display "Game Over"
+					big_text.setString("GAME OVER");
+					big_text.setPosition(300, 300);
+					window.draw(big_text);
+					// update high score
+					if (score > high_score)
+						high_score = score;
+
+					// press fire to restart
+					if (controls.getState("fire"))
+					{
+						lives = 3;
+						level = 1;
+						score = 0;
+						controls.setState("fire", 0);
+						player.reset();
+						create_level();
+					}
+				}
 
 				render();
+
+				window.display();
 			}
 		}
 
-	//private:
+	private:
 
 		sf::RenderWindow window;
 		GameControls controls;
 		sf::Font font;
 		sf::Text info_text;
+		sf::Text big_text;
 
 		int score = 0;
-		int lives = 1;
+		int high_score = 0;
+		int lives = 3;
 		int level = 1;
 
 		Player player;
@@ -470,8 +498,9 @@ class Game
 
 			info_text.setString(
 				"LEVEL: " + to_string(level)
-				+ "     SHIPS: " + to_string(lives)
-				+ "     SCORE: " + to_string(score)
+				+ "   SHIPS: " + to_string(lives)
+				+ "   SCORE: " + to_string(score)
+				+ "         HIGH SCORE: " + to_string(high_score)
 				//+ "     Asteroids: " + to_string((int)asteroids.size())
 				//+ "     Explosions: " + to_string((int)explosions.size())
 			);
@@ -499,7 +528,7 @@ class Game
 						{
 							int new_stage = obj1->stage - 1;
 							sf::Vector2f new_pos = obj1->getPos();
-							float new_speed = obj1->getSpeed();
+							float new_speed = obj1->getSpeed() + 1;
 							float new_angle = obj1->getDirection();
 							new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-55.0, new_speed));
 							new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+55.0, new_speed));
@@ -533,20 +562,19 @@ class Game
 		//----------------------------------------------------------------
 		void render()
 		{
-			window.clear();
 			for (auto& a : asteroids)   window.draw(a->shape);
 			for (auto& e : explosions)  e->draw(window);
 			for (auto& s : shots)       window.draw(s->shape);
 			if (!player.is_dead && player.invincible % 16 < 8)
 				window.draw(player.shape);
 			window.draw(info_text);
-			window.display();
 		}
 
 		//----------------------------------------------------------------
 		void create_level()
 		{
-			int num = level / 2 + 1;
+			asteroids.clear();
+			int num = (level-1) / 2 + 1;
 			int hits = 3 - (level % 2);
 			for (int i = 0; i < num; i++)
 			{
