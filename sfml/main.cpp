@@ -370,8 +370,9 @@ class Game
 			info_text.setFont(font);
 			info_text.setCharacterSize(32);
 			info_text.setFillColor(sf::Color(192, 192, 192));
-
+	
 			create_level();
+			cout << "In Game constructor\n";
 		}
 
 		//----------------------------------------------------------------
@@ -379,43 +380,34 @@ class Game
 		{
 			while (window.isOpen() && !controls.getState("quit"))
 			{
-
-				//TODO:
-				//	add delay_frames - # of frames to ignore input, update
-				//  game_state - playing, game over, new level, title screen
-				//  invincible - # of frames that player cannot die, ship flashes
-
 				handle_input();
 				update();
-				asteroid_shot_collisions();
-				asteroid_player_collisions();
-				remove_dead_objects();
-
-				if (player.is_dead && explosions.size() == 0)
+				if (lives > 0)
 				{
-					lives--;
-					if (lives > 0)
-						player.reset();
-					else
+					asteroid_shot_collisions();
+					asteroid_player_collisions();
+					remove_dead_objects();
+
+					if (player.is_dead && explosions.size() == 0)
 					{
-						cout << "Game Over!\n";
-						cout << "Final score: " << to_string(score) << "\n";
-						controls.setState("quit", 1);
+						lives--;
+						if (lives > 0)
+							player.reset();
 					}
-				}
 
-				if (asteroids.size() <= 0 && explosions.size() == 0)
-				{
-					level++;
-					create_level();
-					player.reset();
+					if (asteroids.size() <= 0 && explosions.size() == 0)
+					{
+						level++;
+						create_level();
+						player.reset();
+					}
 				}
 
 				render();
 			}
 		}
 
-	private:
+	//private:
 
 		sf::RenderWindow window;
 		GameControls controls;
@@ -423,7 +415,7 @@ class Game
 		sf::Text info_text;
 
 		int score = 0;
-		int lives = 3;
+		int lives = 1;
 		int level = 1;
 
 		Player player;
@@ -554,10 +546,11 @@ class Game
 		//----------------------------------------------------------------
 		void create_level()
 		{
-			int num = level % 3;
+			int num = level / 2 + 1;
+			int hits = 3 - (level % 2);
 			for (int i = 0; i < num; i++)
 			{
-				asteroids.push_back(std::make_shared<Asteroid>(3));
+				asteroids.push_back(std::make_shared<Asteroid>(hits));
 			}
 		}
 
