@@ -78,6 +78,7 @@ class GameObject
 
 		sf::ConvexShape shape;
 		sf::Vector2f vel;
+		bool is_dead = false;
 
 		GameObject() { }
 
@@ -133,6 +134,8 @@ class Player : public GameObject
 {
 	public:
 
+		int invincible = false;
+
 		Player(sf::Vector2f p, sf::Vector2f v) :
 			GameObject(p, v)
 		{
@@ -145,7 +148,7 @@ class Player : public GameObject
 			shape.setOutlineThickness(3.0f);
 			shape.setOrigin(0, 0);
 
-			shape.setRotation(-90);
+			reset();
 		}
 
 		void update(GameControls &ctrl)
@@ -158,7 +161,19 @@ class Player : public GameObject
 				vel.x += cos(angle * M_PI / 180.0) * 0.5;
 				vel.y += sin(angle * M_PI / 180.0) * 0.5;
 			}
+
+			if (invincible > 0)
+				invincible--;
+
 			GameObject::update();
+		}
+
+		void reset()
+		{
+			shape.setPosition(sf::Vector2f(MAX_X/2, MAX_Y/2));
+			vel = sf::Vector2f(0, 0);
+			shape.setRotation(-90);
+			invincible = FPS * 3;
 		}
 };
 
@@ -276,140 +291,223 @@ class Shot : public GameObject
 
 };
 
+//------------------------------------------------------------------------
+class Game
+{
+	public:
+
+		//----------------------------------------------------------------
+		Game():
+			window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids"),
+			player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0))
+		{
+			window.setFramerateLimit(FPS);
+			srand(static_cast<unsigned>(time(nullptr)));
+			font.loadFromFile("/usr/share/fonts/chromeos/monotype/verdana.ttf");
+			info_text.setFont(font);
+			info_text.setCharacterSize(32);
+			info_text.setFillColor(sf::Color(192, 192, 192));
+
+			create_level();
+		}
+
+		//----------------------------------------------------------------
+		void start()
+		{
+			while (window.isOpen() && !controls.getState("quit"))
+			{
+
+				//TODO:
+				//	add delay_frames - # of frames to ignore input, update
+				//  game_state - playing, game over, new level, title screen
+				//  invincible - # of frames that player cannot die, ship flashes
+
+				handle_input();
+				update();
+				asteroid_shot_collisions();
+				asteroid_player_collisions();
+				remove_dead_objects();
+
+				if (asteroids.size() <= 0)
+				{
+					level++;
+					create_level();
+					player.reset();
+				}
+
+				render();
+			}
+		}
+
+	private:
+
+		sf::RenderWindow window;
+		GameControls controls;
+		sf::Font font;
+		sf::Text info_text;
+
+		int score = 0;
+		int lives = 3;
+		int level = 1;
+
+		Player player;
+		vector<std::shared_ptr<Shot>> shots;
+		vector<std::shared_ptr<Asteroid>> asteroids;
+
+		//----------------------------------------------------------------
+		void handle_input()
+		{
+			sf::Event event;
+			while (window.pollEvent(event))
+			{
+				controls.handleEvent(event);
+				if (controls.getState("quit"))
+					window.close();
+			}
+		}
+
+		//----------------------------------------------------------------
+		void update()
+		{
+			for (auto& a : asteroids)
+				a->update();
+
+			for (auto s = shots.begin(); s != shots.end(); /* no increment */)
+			{
+				(*s)->update();
+
+				if ((*s)->time_to_live <= 0)
+					s = shots.erase(s);
+				else
+					++s;
+			}
+
+			player.update(controls);
+
+			if (controls.getState("fire"))
+			{
+				if (shots.size() < 3) // limit number of active shots
+				{
+					shots.push_back(std::make_shared<Shot>( player.getPos(), player.getAngle() ));
+					controls.setState("fire", 0);
+				}
+			}
+
+			info_text.setString(
+				"Level: " + to_string(level)
+				+ "     Score: " + to_string(score)
+				+ "     Lives: " + to_string(lives)
+				+ "     Asteroids: " + to_string((int)asteroids.size())
+			);
+		}
+
+		//----------------------------------------------------------------
+		void asteroid_shot_collisions()
+		{
+			std::vector<std::shared_ptr<Asteroid>> new_asteroids;
+			for (const auto& obj1 : asteroids)
+			{
+				for (const auto& obj2 : shots)
+				{
+					if (obj1->getHitbox().intersects(obj2->getHitbox()))
+					{
+						// increase score
+						score += 10;
+						// create new asteroids
+						if (obj1->stage > 1)
+						{
+							int new_stage = obj1->stage - 1;
+							sf::Vector2f new_pos = obj1->getPos();
+							float new_speed = obj1->getSpeed();
+							float new_angle = obj1->getDirection();
+							new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-55.0, new_speed));
+							new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+55.0, new_speed));
+						}
+						// mark a and s for deletion
+						obj1->is_dead = true;
+						obj2->is_dead = true;
+					}
+				}
+			}
+			asteroids.insert(asteroids.end(), new_asteroids.begin(), new_asteroids.end());
+		}
+
+		//----------------------------------------------------------------
+		void asteroid_player_collisions()
+		{
+			if (player.invincible)
+				return;
+
+			for (const auto& obj1 : asteroids)
+			{
+				if (obj1->getHitbox().intersects(player.getHitbox()))
+				{
+					lives--;
+					if(lives <= 0)
+					{
+						cout << "Game over!\n";
+						cout << "Score: " << score << "\n";
+						controls.setState("quit", 1);
+					}
+					else
+					{
+						player.reset();
+					}
+
+				}
+			}
+		}
 
 
-/*****************************************************/
+		//----------------------------------------------------------------
+		void render()
+		{
+			window.clear();
+			for (auto& a : asteroids)  window.draw(a->shape);
+			for (auto& s : shots)      window.draw(s->shape);
+			if (player.invincible % 16 < 8)
+				window.draw(player.shape);
+			window.draw(info_text);
+			window.display();
+		}
+
+		//----------------------------------------------------------------
+		void create_level()
+		{
+			int num = level % 3;
+			for (int i = 0; i < num; i++)
+			{
+				asteroids.push_back(std::make_shared<Asteroid>(3));
+			}
+		}
+
+		//----------------------------------------------------------------
+		void remove_dead_objects()
+		{
+			asteroids.erase(
+					std::remove_if(
+						asteroids.begin(),
+						asteroids.end(),
+						[](const auto& obj) { return obj->is_dead; }),
+					asteroids.end());
+
+			shots.erase(
+					std::remove_if(
+						shots.begin(),
+						shots.end(),
+						[](const auto& obj) { return obj->is_dead; }),
+					shots.end());
+
+		}
+
+};
+
+
+/*************************************************************************/
 int main()
 {
-	sf::RenderWindow window(sf::VideoMode(MAX_X, MAX_Y), "Classic Asteroids");
-	window.setFramerateLimit(FPS);
-	srand(static_cast<unsigned>(time(nullptr)));
-
-	GameControls controls;
-
-	sf::Font font;
-	//string font_path = "/usr/share/fonts/chromeos/roboto/Roboto-Light.ttf";
-	string font_path = "/usr/share/fonts/chromeos/monotype/verdana.ttf";
-	if (!font.loadFromFile(font_path))
-	{
-		cout << "Error loading font.\n";
-		return 1;
-	}
-	sf::Text info_text;
-	info_text.setFont(font);
-	info_text.setCharacterSize(32);
-	info_text.setFillColor(sf::Color(192, 192, 192));
-
-	// initialize game objects
-	int score = 0;
-	int lives = 3;
-	int level = 1;
-	Player player(sf::Vector2f(MAX_X/2, MAX_Y/2), sf::Vector2f(0, 0));
-	vector<std::shared_ptr<Shot>> shots;
-
-	vector<std::shared_ptr<Asteroid>> asteroids;
-	asteroids.push_back(std::make_shared<Asteroid>(2));
-	asteroids.push_back(std::make_shared<Asteroid>(3));
-
-	sf::Event event;
-	sf::Clock clock;
-
-	sf::FloatRect box1, box2;
-
-	// main game loop
-	while (window.isOpen() && !controls.getState("quit"))
-	{
-		// handle events and update the user controls
-		while (window.pollEvent(event))
-		{
-			controls.handleEvent(event);
-
-			if (controls.getState("quit"))
-				window.close();
-		}
-
-		// update the game world
-		for (auto& a : asteroids)
-			a->update();
-
-		for (auto s = shots.begin(); s != shots.end(); /* no increment */)
-		{
-			(*s)->update();
-
-			if ((*s)->time_to_live <= 0) {
-				s = shots.erase(s); // Efficient removal using iterator
-			} else {
-				++s;
-			}
-		}
-
-		player.update(controls);
-
-		if (controls.getState("fire"))
-		{
-			if (shots.size() < 3) // limit number of active shots
-			{
-				shots.push_back(std::make_shared<Shot>( player.getPos(), player.getAngle() ));
-				controls.setState("fire", 0);
-			}
-		}
-
-
-		// collision detection
-		std::vector<std::shared_ptr<Asteroid>> new_asteroids;
-		for (auto s = shots.begin(); s != shots.end(); /* no increment */)
-		{
-			box1 = (*s)->getHitbox();
-
-			bool collision = false;
-
-			for (auto a = asteroids.begin(); a != asteroids.end(); /* no increment */)
-			{
-				box2 = (*a)->getHitbox();
-				if (box1.intersects(box2))
-				{
-					int new_stage = (*a)->stage - 1;
-					if (new_stage >= 1)
-					{
-						sf::Vector2f new_pos = (*a)->getPos();
-						float new_speed = (*a)->getSpeed();  // make the new ones go faster?
-						float new_angle = (*a)->getDirection();
-						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle-55.0, new_speed));
-						new_asteroids.push_back(std::make_shared<Asteroid>(new_stage, new_pos, new_angle+55.0, new_speed));
-					}
-					score += 100;
-					a = asteroids.erase(a);
-					collision = true;
-				}
-				else
-				{
-					++a;
-				}
-			}
-
-			if (collision)
-				s = shots.erase(s);
-			else
-				++s;
-		}
-		asteroids.insert(asteroids.end(), new_asteroids.begin(), new_asteroids.end());
-
-		info_text.setString(
-			"Level: " + to_string(level)
-			+ "     Score: " + to_string(score)
-			+ "     Lives: " + to_string(lives)
-			+ "     Asteroids: " + to_string((int)asteroids.size())
-		);
-
-		// render
-		window.clear();
-		for (auto& a : asteroids)  window.draw(a->shape);
-		for (auto& s : shots)      window.draw(s->shape);
-		window.draw(player.shape);
-		window.draw(info_text);
-		window.display();
-	}
-
+	Game g;
+	g.start();
 	return 0;
 }
 
