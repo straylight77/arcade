@@ -174,6 +174,7 @@ class Player : public GameObject
 			vel = sf::Vector2f(0, 0);
 			shape.setRotation(-90);
 			invincible = FPS * 3;
+			is_dead = false;
 		}
 };
 
@@ -291,6 +292,68 @@ class Shot : public GameObject
 
 };
 
+
+//------------------------------------------------------------------------
+class Explosion
+{
+	public:
+		int frameCount = 0;
+		bool is_dead = false;
+
+		Explosion(sf::Vector2f position, int particleCount, float speed, int frames)
+			: position(position), speed(speed)
+		{
+			for (int i = 0; i < particleCount; ++i)
+			{
+				frameCount = frames;
+				sf::CircleShape particle(2.0f);
+				particle.setPosition(position);
+				//particle.setFillColor(sf::Color::Yellow);
+
+				float angle = (2 * M_PI / particleCount) * i;
+				float x = std::cos(angle) * speed;
+				float y = std::sin(angle) * speed;
+
+				particle.move(x, y);
+
+				particles.push_back(particle);
+			}
+		}
+
+		void update()
+		{
+			if (frameCount <= 0) {
+				is_dead = true;
+				return;
+			}
+
+			for (auto& particle : particles)
+			{
+				float angle = std::atan2(
+						particle.getPosition().y - position.y,
+						particle.getPosition().x - position.x);
+				float x = std::cos(angle) * speed;
+				float y = std::sin(angle) * speed;
+
+				particle.move(x, y);
+			}
+
+			frameCount--;
+		}
+
+		void draw(sf::RenderWindow& window)
+		{
+			for (const auto& particle : particles)
+				window.draw(particle);
+		}
+
+	private:
+		sf::Vector2f position;
+		float speed;
+		std::vector<sf::CircleShape> particles;
+};
+
+
 //------------------------------------------------------------------------
 class Game
 {
@@ -328,7 +391,20 @@ class Game
 				asteroid_player_collisions();
 				remove_dead_objects();
 
-				if (asteroids.size() <= 0)
+				if (player.is_dead && explosions.size() == 0)
+				{
+					lives--;
+					if (lives > 0)
+						player.reset();
+					else
+					{
+						cout << "Game Over!\n";
+						cout << "Final score: " << to_string(score) << "\n";
+						controls.setState("quit", 1);
+					}
+				}
+
+				if (asteroids.size() <= 0 && explosions.size() == 0)
 				{
 					level++;
 					create_level();
@@ -353,6 +429,7 @@ class Game
 		Player player;
 		vector<std::shared_ptr<Shot>> shots;
 		vector<std::shared_ptr<Asteroid>> asteroids;
+		vector<std::shared_ptr<Explosion>> explosions;
 
 		//----------------------------------------------------------------
 		void handle_input()
@@ -372,6 +449,9 @@ class Game
 			for (auto& a : asteroids)
 				a->update();
 
+			for (auto& e : explosions)
+				e->update();
+
 			for (auto s = shots.begin(); s != shots.end(); /* no increment */)
 			{
 				(*s)->update();
@@ -382,22 +462,26 @@ class Game
 					++s;
 			}
 
-			player.update(controls);
-
-			if (controls.getState("fire"))
+			if (!player.is_dead)
 			{
-				if (shots.size() < 3) // limit number of active shots
+				player.update(controls);
+
+				if (controls.getState("fire"))
 				{
-					shots.push_back(std::make_shared<Shot>( player.getPos(), player.getAngle() ));
-					controls.setState("fire", 0);
+					if (shots.size() < 3) // limit number of active shots
+					{
+						shots.push_back(std::make_shared<Shot>( player.getPos(), player.getAngle() ));
+						controls.setState("fire", 0);
+					}
 				}
 			}
 
 			info_text.setString(
-				"Level: " + to_string(level)
-				+ "     Score: " + to_string(score)
-				+ "     Lives: " + to_string(lives)
-				+ "     Asteroids: " + to_string((int)asteroids.size())
+				"LEVEL: " + to_string(level)
+				+ "     SHIPS: " + to_string(lives)
+				+ "     SCORE: " + to_string(score)
+				//+ "     Asteroids: " + to_string((int)asteroids.size())
+				//+ "     Explosions: " + to_string((int)explosions.size())
 			);
 		}
 
@@ -411,6 +495,11 @@ class Game
 				{
 					if (obj1->getHitbox().intersects(obj2->getHitbox()))
 					{
+						if (asteroids.size() > 1)
+							explosions.push_back(std::make_shared<Explosion>(obj1->getPos(), 10, 3.0f, 15));
+						else
+							explosions.push_back(std::make_shared<Explosion>(obj1->getPos(), 10, 3.0f, 45));
+
 						// increase score
 						score += 10;
 						// create new asteroids
@@ -435,25 +524,15 @@ class Game
 		//----------------------------------------------------------------
 		void asteroid_player_collisions()
 		{
-			if (player.invincible)
+			if (player.is_dead || player.invincible)
 				return;
 
 			for (const auto& obj1 : asteroids)
 			{
 				if (obj1->getHitbox().intersects(player.getHitbox()))
 				{
-					lives--;
-					if(lives <= 0)
-					{
-						cout << "Game over!\n";
-						cout << "Score: " << score << "\n";
-						controls.setState("quit", 1);
-					}
-					else
-					{
-						player.reset();
-					}
-
+					player.is_dead = true;
+					explosions.push_back(std::make_shared<Explosion>(player.getPos(), 30, 4.0f, 60));
 				}
 			}
 		}
@@ -463,9 +542,10 @@ class Game
 		void render()
 		{
 			window.clear();
-			for (auto& a : asteroids)  window.draw(a->shape);
-			for (auto& s : shots)      window.draw(s->shape);
-			if (player.invincible % 16 < 8)
+			for (auto& a : asteroids)   window.draw(a->shape);
+			for (auto& e : explosions)  e->draw(window);
+			for (auto& s : shots)       window.draw(s->shape);
+			if (!player.is_dead && player.invincible % 16 < 8)
 				window.draw(player.shape);
 			window.draw(info_text);
 			window.display();
@@ -497,6 +577,13 @@ class Game
 						shots.end(),
 						[](const auto& obj) { return obj->is_dead; }),
 					shots.end());
+
+			explosions.erase(
+					std::remove_if(
+						explosions.begin(),
+						explosions.end(),
+						[](const auto& obj) { return obj->is_dead; }),
+					explosions.end());
 
 		}
 
