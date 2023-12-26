@@ -1,17 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
-
-//func init() {
-//	s1 := rand.NewSource(time.Now().UnixNano())
-//	r1 := rand.New(s1)
-//}
 
 /**************************************************************************
  *                              GameObject                                *
@@ -57,6 +53,8 @@ func (obj *GameObject) checkBoundary(maxX, maxY float64) {
 	} else if obj.Y-vpad > maxY { // bottom
 		obj.Y = -vpad
 	}
+
+	//obj.Angle = float64(int(obj.Angle) % 360)
 }
 
 // ------------------------------------------------------------------------
@@ -72,9 +70,19 @@ func (obj *GameObject) LoadSprite(fname string) {
 }
 
 // ------------------------------------------------------------------------
+func (obj GameObject) String() string {
+	return fmt.Sprintf(
+		"[%.1f, %.1f] (%.1f, %.1f)",
+		obj.VelX, obj.VelY,
+		obj.X, obj.Y,
+	)
+}
+
+// ------------------------------------------------------------------------
 func (obj *GameObject) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(-obj.Width/2, -obj.Height/2)
+	op.GeoM.Scale(0.75, 0.75)
 	op.GeoM.Rotate(obj.Angle * 2 * math.Pi / 360)
 	op.GeoM.Translate(obj.X, obj.Y)
 	screen.DrawImage(obj.Img, op)
@@ -95,7 +103,7 @@ func getRandDirection() float64 {
 
 // ------------------------------------------------------------------------
 func getRandSpeed() float64 {
-	return rand.Float64()*(5-2) + 2
+	return rand.Float64()*(4-2) + 2
 }
 
 // ------------------------------------------------------------------------
@@ -120,5 +128,48 @@ func MakeAsteroid(x, y, direction, speed float64) Asteroid {
  **************************************************************************/
 type Player struct {
 	GameObject
-	Angle float64
+}
+
+// ------------------------------------------------------------------------
+func MakePlayer() Player {
+	p := Player{
+		GameObject{X: MAX_X / 2, Y: MAX_Y / 2, VelX: 0, VelY: 0, Angle: -90},
+	}
+	p.LoadSprite("hawk.png")
+	return p
+}
+
+// ------------------------------------------------------------------------
+func (p Player) String() string {
+	return fmt.Sprintf(
+		"%.1f [%.1f, %.1f] (%.1f, %.1f)",
+		p.Angle,
+		p.VelX, p.VelY,
+		p.X, p.Y,
+	)
+}
+
+// ------------------------------------------------------------------------
+func (p *Player) Update(maxX, maxY float64) {
+
+	rotateSpeed := 150.0
+	thrust := 0.1
+
+	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		p.Angle -= rotateSpeed * 2 * math.Pi / 360
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		p.Angle += rotateSpeed * 2 * math.Pi / 360
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyUp) {
+		p.VelX += math.Cos(p.Angle*math.Pi/180) * thrust
+		p.VelY += math.Sin(p.Angle*math.Pi/180) * thrust
+	}
+
+	p.X += p.VelX
+	p.Y += p.VelY
+	p.checkBoundary(maxX, maxY)
+
 }

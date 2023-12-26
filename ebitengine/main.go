@@ -17,12 +17,16 @@ const MAX_Y = 768
  *                                  Game                                  *
  **************************************************************************/
 type Game struct {
+	Done      bool
 	level     int
 	asteroids []Asteroid
+	player    Player
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Init() {
+	g.Done = false
+	g.player = MakePlayer()
 	g.level = 1
 	g.makeLevel()
 	//g.removeAsteroid(1)
@@ -30,14 +34,20 @@ func (g *Game) Init() {
 
 // ------------------------------------------------------------------------
 func (g *Game) Update() error {
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		g.Done = true
+	}
+
 	for i := range g.asteroids {
 		g.asteroids[i].Update(MAX_X, MAX_Y)
 	}
+	g.player.Update(MAX_X, MAX_Y)
 	return nil
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.player.Draw(screen)
 	for i := range g.asteroids {
 		g.asteroids[i].Draw(screen)
 	}
@@ -46,21 +56,16 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 // ------------------------------------------------------------------------
 func (g *Game) DrawDebug(screen *ebiten.Image) {
-	msg := fmt.Sprintf(
-		"FPS: %.1f\nAsteroids: %d",
-		ebiten.ActualFPS(),
-		len(g.asteroids),
-	)
+
+	msg := fmt.Sprintf("FPS: %.1f\nTPS: %.1f", ebiten.ActualFPS(), ebiten.ActualTPS())
 	ebitenutil.DebugPrint(screen, msg)
 
+	msg2 := fmt.Sprintf("Player: %v", g.player)
+	ebitenutil.DebugPrintAt(screen, msg2, 0, 50)
+
 	for i, v := range g.asteroids {
-		msg := fmt.Sprintf(
-			"%d: (%3.1f, %3.1f) / (%3.1f, %3.1f)",
-			i,
-			v.X, v.Y,
-			v.VelX, v.VelY,
-		)
-		ebitenutil.DebugPrintAt(screen, msg, 0, 50+(i*18))
+		msg := fmt.Sprintf("%d: %v", i, v)
+		ebitenutil.DebugPrintAt(screen, msg, 0, 80+(i*18))
 	}
 }
 
