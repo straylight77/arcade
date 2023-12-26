@@ -1,5 +1,7 @@
 package main
 
+// Assets: https://kenney.nl/assets/space-shooter-redux
+
 import (
 	"fmt"
 	"log"
@@ -18,6 +20,7 @@ const MAX_Y = 768
  **************************************************************************/
 type Game struct {
 	Done      bool
+	Debug     bool
 	level     int
 	asteroids []Asteroid
 	player    Player
@@ -42,6 +45,11 @@ func (g *Game) Update() error {
 		g.asteroids[i].Update(MAX_X, MAX_Y)
 	}
 	g.player.Update(MAX_X, MAX_Y)
+
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		g.Debug = !g.Debug
+	}
+
 	return nil
 }
 
@@ -51,7 +59,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for i := range g.asteroids {
 		g.asteroids[i].Draw(screen)
 	}
-	g.DrawDebug(screen)
+	if g.Debug {
+		g.DrawDebug(screen)
+	}
 }
 
 // ------------------------------------------------------------------------

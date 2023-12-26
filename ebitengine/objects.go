@@ -119,7 +119,7 @@ func MakeAsteroid(x, y, direction, speed float64) Asteroid {
 		GameObject{X: x, Y: y, VelX: vx, VelY: vy},
 		3,
 	}
-	a.LoadSprite("spin-45.png")
+	a.LoadSprite("meteorBrown_big1.png")
 	return a
 }
 
@@ -135,7 +135,7 @@ func MakePlayer() Player {
 	p := Player{
 		GameObject{X: MAX_X / 2, Y: MAX_Y / 2, VelX: 0, VelY: 0, Angle: -90},
 	}
-	p.LoadSprite("hawk.png")
+	p.LoadSprite("playerShip1_blue.png")
 	return p
 }
 
