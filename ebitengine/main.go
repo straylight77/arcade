@@ -9,7 +9,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	//https://github.com/fogleman/gg
 )
 
 const MAX_X = 1024
@@ -24,11 +23,13 @@ type Game struct {
 	level     int
 	asteroids []Asteroid
 	player    Player
+	controls  Controls
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Init() {
-	g.Done = false
+	g.controls = Controls{}
+	g.controls.Init()
 	g.player = MakePlayer()
 	g.level = 1
 	g.makeLevel()
@@ -37,18 +38,18 @@ func (g *Game) Init() {
 
 // ------------------------------------------------------------------------
 func (g *Game) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		g.Done = true
+
+	g.controls.handleInput()
+
+	if g.controls.Cmd["debug"] == 1 {
+		g.Debug = !g.Debug
+		g.controls.Cmd["debug"] = 0
 	}
 
 	for i := range g.asteroids {
 		g.asteroids[i].Update(MAX_X, MAX_Y)
 	}
-	g.player.Update(MAX_X, MAX_Y)
-
-	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		g.Debug = !g.Debug
-	}
+	g.player.Update(MAX_X, MAX_Y, g.controls)
 
 	return nil
 }
@@ -70,12 +71,15 @@ func (g *Game) DrawDebug(screen *ebiten.Image) {
 	msg := fmt.Sprintf("FPS: %.1f\nTPS: %.1f", ebiten.ActualFPS(), ebiten.ActualTPS())
 	ebitenutil.DebugPrint(screen, msg)
 
-	msg2 := fmt.Sprintf("Player: %v", g.player)
-	ebitenutil.DebugPrintAt(screen, msg2, 0, 50)
+	msg2 := fmt.Sprintf("Cmd: %v", g.controls.Cmd)
+	ebitenutil.DebugPrintAt(screen, msg2, 0, 45)
+
+	msg3 := fmt.Sprintf("Player: %v", g.player)
+	ebitenutil.DebugPrintAt(screen, msg3, 0, 75)
 
 	for i, v := range g.asteroids {
 		msg := fmt.Sprintf("%d: %v", i, v)
-		ebitenutil.DebugPrintAt(screen, msg, 0, 80+(i*18))
+		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
 	}
 }
 

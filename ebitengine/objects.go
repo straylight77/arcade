@@ -150,20 +150,15 @@ func (p Player) String() string {
 }
 
 // ------------------------------------------------------------------------
-func (p *Player) Update(maxX, maxY float64) {
+func (p *Player) Update(maxX, maxY float64, ctrl Controls) {
 
-	rotateSpeed := 150.0
+	rotateSpeed := 200.0
 	thrust := 0.1
 
-	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		p.Angle -= rotateSpeed * 2 * math.Pi / 360
-	}
+	turn := ctrl.Cmd["right"] - ctrl.Cmd["left"]
+	p.Angle += float64(turn) * rotateSpeed * 2 * math.Pi / 360
 
-	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		p.Angle += rotateSpeed * 2 * math.Pi / 360
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeyUp) {
+	if ctrl.Cmd["thrust"] == 1 {
 		p.VelX += math.Cos(p.Angle*math.Pi/180) * thrust
 		p.VelY += math.Sin(p.Angle*math.Pi/180) * thrust
 	}
@@ -171,5 +166,4 @@ func (p *Player) Update(maxX, maxY float64) {
 	p.X += p.VelX
 	p.Y += p.VelY
 	p.checkBoundary(maxX, maxY)
-
 }
