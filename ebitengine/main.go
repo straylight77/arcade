@@ -21,7 +21,7 @@ type Game struct {
 	Done      bool
 	Debug     bool
 	level     int
-	asteroids []Asteroid
+	asteroids SpriteGroup
 	player    Player
 	controls  Controls
 }
@@ -33,7 +33,6 @@ func (g *Game) Init() {
 	g.player = MakePlayer()
 	g.level = 1
 	g.makeLevel()
-	//g.removeAsteroid(1)
 }
 
 // ------------------------------------------------------------------------
@@ -41,14 +40,16 @@ func (g *Game) Update() error {
 
 	g.controls.handleInput()
 
+	if g.controls.Cmd["quit"] == 1 {
+		return ebiten.Termination
+	}
+
 	if g.controls.Cmd["debug"] == 1 {
 		g.Debug = !g.Debug
 		g.controls.Cmd["debug"] = 0
 	}
 
-	for i := range g.asteroids {
-		g.asteroids[i].Update(MAX_X, MAX_Y)
-	}
+	g.asteroids.Update(MAX_X, MAX_Y)
 	g.player.Update(MAX_X, MAX_Y, g.controls)
 
 	return nil
@@ -57,27 +58,26 @@ func (g *Game) Update() error {
 // ------------------------------------------------------------------------
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.player.Draw(screen)
-	for i := range g.asteroids {
-		g.asteroids[i].Draw(screen)
-	}
-	if g.Debug {
-		g.DrawDebug(screen)
-	}
+	g.asteroids.Draw(screen)
+	g.DrawDebug(screen)
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) DrawDebug(screen *ebiten.Image) {
+	if !g.Debug {
+		return
+	}
 
-	msg := fmt.Sprintf("FPS: %.1f\nTPS: %.1f", ebiten.ActualFPS(), ebiten.ActualTPS())
+	msg := fmt.Sprintf(
+		"FPS: %.1f  TPS: %.1f\n\nCMD: %v\n\nPlayer: %v",
+		ebiten.ActualFPS(),
+		ebiten.ActualTPS(),
+		g.controls.Cmd,
+		g.player,
+	)
 	ebitenutil.DebugPrint(screen, msg)
 
-	msg2 := fmt.Sprintf("Cmd: %v", g.controls.Cmd)
-	ebitenutil.DebugPrintAt(screen, msg2, 0, 45)
-
-	msg3 := fmt.Sprintf("Player: %v", g.player)
-	ebitenutil.DebugPrintAt(screen, msg3, 0, 75)
-
-	for i, v := range g.asteroids {
+	for i, v := range g.asteroids.GetSprites() {
 		msg := fmt.Sprintf("%d: %v", i, v)
 		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
 	}
@@ -89,26 +89,16 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 // ------------------------------------------------------------------------
-func (g *Game) removeAsteroid(index int) {
-	g.asteroids = append(g.asteroids[:index], g.asteroids[index+1:]...)
-}
-
-// ------------------------------------------------------------------------
-func (g *Game) addAsteroid(a Asteroid) {
-	g.asteroids = append(g.asteroids, a)
-}
-
-// ------------------------------------------------------------------------
 func (g *Game) makeLevel() {
 	//num := (g.level-1)/2 + 1
 	//stage := 3 - (g.level % 2)
-	num := 5
+	num := 3
 	for i := 0; i < num; i++ {
 		dir := getRandDirection()
 		spd := getRandSpeed()
 		x := float64(rand.Intn(MAX_X))
 		y := float64(rand.Intn(MAX_Y))
-		g.addAsteroid(MakeAsteroid(x, y, dir, spd))
+		g.asteroids.Add(MakeAsteroid(x, y, dir, spd))
 	}
 }
 
