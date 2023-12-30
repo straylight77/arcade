@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,8 +23,8 @@ type Game struct {
 	Debug     bool
 	level     int
 	player    Player
-	asteroids SpriteGroup
-	shots     SpriteGroup
+	asteroids []*Asteroid
+	shots     []*Shot
 	controls  Controls
 }
 
@@ -53,22 +54,51 @@ func (g *Game) Update() error {
 	if g.controls.Cmd["fire"] == 1 {
 		// create a new shot
 		s := MakeShotFromPlayer(&g.player)
-		g.shots.Add(s)
+		g.shots = append(g.shots, s)
 		g.controls.Cmd["fire"] = 0
 	}
 
-	g.asteroids.Update(MAX_X, MAX_Y)
-	g.shots.Update(MAX_X, MAX_Y)
+	for _, a := range g.asteroids {
+		a.Update(MAX_X, MAX_Y)
+	}
+	for _, s := range g.shots {
+		s.Update(MAX_X, MAX_Y)
+	}
 	g.player.Update(MAX_X, MAX_Y, g.controls)
 
+	for i, s := range g.shots {
+		if s.IsDead() {
+			g.shots = append(g.shots[:i], g.shots[i+1:]...)
+			break
+		}
+	}
+
+	// do collision detection
+	for i, s := range g.shots {
+		for j, a := range g.asteroids {
+			dx := s.X - a.X
+			dy := s.Y - a.Y
+			dist := math.Sqrt(dx*dx + dy*dy)
+			intersects := dist < a.Radius
+
+			if intersects {
+				g.shots = append(g.shots[:i], g.shots[i+1:]...)
+				g.asteroids = append(g.asteroids[:j], g.asteroids[j+1:]...)
+			}
+		}
+	}
 	return nil
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.shots.Draw(screen)
+	for _, s := range g.shots {
+		s.Draw(screen)
+	}
+	for _, a := range g.asteroids {
+		a.Draw(screen)
+	}
 	g.player.Draw(screen)
-	g.asteroids.Draw(screen)
 	g.drawDebug(screen)
 }
 
@@ -92,7 +122,7 @@ func (g *Game) drawDebug(screen *ebiten.Image) {
 	)
 	ebitenutil.DebugPrint(screen, msg)
 
-	for i, v := range g.shots.GetSprites() {
+	for i, v := range g.shots {
 		msg := fmt.Sprintf("%d: %v", i, v)
 		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
 	}
@@ -108,7 +138,8 @@ func (g *Game) makeLevel() {
 		spd := getRandSpeed()
 		x := float64(rand.Intn(MAX_X))
 		y := float64(rand.Intn(MAX_Y))
-		g.asteroids.Add(MakeAsteroid(x, y, dir, spd))
+		a := MakeAsteroid(x, y, dir, spd)
+		g.asteroids = append(g.asteroids, a)
 	}
 }
 

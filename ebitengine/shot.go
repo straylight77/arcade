@@ -42,6 +42,7 @@ func MakeShot(x, y, direction, speed float64) *Shot {
 	size := s.Img.Bounds().Size()
 	s.Width = float64(size.X)
 	s.Height = float64(size.Y)
+	s.Radius = 0
 
 	return s
 }

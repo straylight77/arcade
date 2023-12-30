@@ -17,6 +17,7 @@ type GameObject struct {
 	VelX, VelY    float64
 	Img           *ebiten.Image
 	Width, Height float64
+	Radius        float64
 }
 
 // ------------------------------------------------------------------------
@@ -47,6 +48,15 @@ func (obj *GameObject) Speed() float64 {
 // ------------------------------------------------------------------------
 func (obj *GameObject) Direction() float64 {
 	return math.Atan(obj.VelY / obj.VelX)
+}
+
+// ------------------------------------------------------------------------
+func (obj *GameObject) IntersectsWith(obj2 GameObject) bool {
+	dx := obj2.X - obj.X
+	dy := obj2.Y - obj.Y
+	dist := math.Sqrt(dx*dx + dy*dy)
+	intersects := dist < (obj2.Radius + obj.Radius)
+	return intersects
 }
 
 // ------------------------------------------------------------------------
@@ -86,6 +96,7 @@ func (obj *GameObject) LoadSprite(fname string) {
 	size := obj.Img.Bounds().Size()
 	obj.Width = float64(size.X)
 	obj.Height = float64(size.Y)
+	obj.Radius = (obj.Width + obj.Height) / 2
 }
 
 // ------------------------------------------------------------------------
