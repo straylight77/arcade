@@ -21,9 +21,7 @@ type GameObject struct {
 
 // ------------------------------------------------------------------------
 func (obj *GameObject) Update(maxX, maxY float64) {
-	obj.X += obj.VelX
-	obj.Y += obj.VelY
-	obj.checkBoundary(maxX, maxY)
+	obj.UpdatePosition(maxX, maxY)
 }
 
 // ------------------------------------------------------------------------
@@ -37,6 +35,11 @@ func (obj *GameObject) Draw(screen *ebiten.Image) {
 }
 
 // ------------------------------------------------------------------------
+func (obj *GameObject) IsDead() bool {
+	return false
+}
+
+// ------------------------------------------------------------------------
 func (obj *GameObject) Speed() float64 {
 	return math.Sqrt(obj.VelX*obj.VelX + obj.VelY*obj.VelY)
 }
@@ -44,6 +47,13 @@ func (obj *GameObject) Speed() float64 {
 // ------------------------------------------------------------------------
 func (obj *GameObject) Direction() float64 {
 	return math.Atan(obj.VelY / obj.VelX)
+}
+
+// ------------------------------------------------------------------------
+func (obj *GameObject) UpdatePosition(maxX, maxY float64) {
+	obj.X += obj.VelX
+	obj.Y += obj.VelY
+	obj.checkBoundary(maxX, maxY)
 }
 
 // ------------------------------------------------------------------------

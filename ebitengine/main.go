@@ -21,8 +21,9 @@ type Game struct {
 	Done      bool
 	Debug     bool
 	level     int
-	asteroids SpriteGroup
 	player    Player
+	asteroids SpriteGroup
+	shots     SpriteGroup
 	controls  Controls
 }
 
@@ -49,7 +50,15 @@ func (g *Game) Update() error {
 		g.controls.Cmd["debug"] = 0
 	}
 
+	if g.controls.Cmd["fire"] == 1 {
+		// create a new shot
+		s := MakeShotFromPlayer(&g.player)
+		g.shots.Add(s)
+		g.controls.Cmd["fire"] = 0
+	}
+
 	g.asteroids.Update(MAX_X, MAX_Y)
+	g.shots.Update(MAX_X, MAX_Y)
 	g.player.Update(MAX_X, MAX_Y, g.controls)
 
 	return nil
@@ -57,13 +66,19 @@ func (g *Game) Update() error {
 
 // ------------------------------------------------------------------------
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.shots.Draw(screen)
 	g.player.Draw(screen)
 	g.asteroids.Draw(screen)
-	g.DrawDebug(screen)
+	g.drawDebug(screen)
 }
 
 // ------------------------------------------------------------------------
-func (g *Game) DrawDebug(screen *ebiten.Image) {
+func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	return MAX_X, MAX_Y
+}
+
+// ------------------------------------------------------------------------
+func (g *Game) drawDebug(screen *ebiten.Image) {
 	if !g.Debug {
 		return
 	}
@@ -77,15 +92,10 @@ func (g *Game) DrawDebug(screen *ebiten.Image) {
 	)
 	ebitenutil.DebugPrint(screen, msg)
 
-	for i, v := range g.asteroids.GetSprites() {
+	for i, v := range g.shots.GetSprites() {
 		msg := fmt.Sprintf("%d: %v", i, v)
 		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
 	}
-}
-
-// ------------------------------------------------------------------------
-func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return MAX_X, MAX_Y
 }
 
 // ------------------------------------------------------------------------
