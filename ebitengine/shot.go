@@ -3,8 +3,25 @@ package main
 import (
 	"fmt"
 	"math"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+var ShotImg *ebiten.Image
+
+func init() {
+	fname := "laserBlue02.png"
+	var err error
+	ShotImg, _, err = ebitenutil.NewImageFromFile(fname)
+	if err != nil {
+		panic(err)
+	}
+}
+
+/**************************************************************************
+ *                                Shot                                    *
+ **************************************************************************/
 type Shot struct {
 	GameObject
 	timeToLive int
@@ -20,7 +37,12 @@ func MakeShot(x, y, direction, speed float64) *Shot {
 		60 * 1, // 1 sec
 		false,
 	}
-	s.LoadSprite("laserBlue02.png")
+	//s.LoadSprite("laserBlue02.png")
+	s.Img = ShotImg
+	size := s.Img.Bounds().Size()
+	s.Width = float64(size.X)
+	s.Height = float64(size.Y)
+
 	return s
 }
 

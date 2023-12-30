@@ -3,7 +3,21 @@ package main
 import (
 	"math"
 	"math/rand"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+var AsteroidImg *ebiten.Image
+
+func init() {
+	fname := "meteorBrown_big1.png"
+	var err error
+	AsteroidImg, _, err = ebitenutil.NewImageFromFile(fname)
+	if err != nil {
+		panic(err)
+	}
+}
 
 /**************************************************************************
  *                               Asteroid                                 *
@@ -36,6 +50,12 @@ func MakeAsteroid(x, y, direction, speed float64) *Asteroid {
 		GameObject{X: x, Y: y, VelX: vx, VelY: vy},
 		3,
 	}
-	a.LoadSprite("meteorBrown_big1.png")
+
+	//a.LoadSprite("meteorBrown_big1.png")
+	a.Img = AsteroidImg
+	size := a.Img.Bounds().Size()
+	a.Width = float64(size.X)
+	a.Height = float64(size.Y)
+
 	return a
 }
