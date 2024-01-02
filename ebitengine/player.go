@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 /**************************************************************************
@@ -10,14 +12,14 @@ import (
  **************************************************************************/
 type Player struct {
 	GameObject
+	Invincible int
 }
 
 // ------------------------------------------------------------------------
 func MakePlayer() *Player {
-	p := &Player{
-		GameObject{X: MAX_X / 2, Y: MAX_Y / 2, VelX: 0, VelY: 0, Angle: -90},
-	}
+	p := &Player{}
 	p.LoadSprite("assets/playerShip1_blue.png")
+	p.Reset()
 	return p
 }
 
@@ -48,4 +50,29 @@ func (p *Player) Update(maxX, maxY float64, ctrl Controls) {
 	p.X += p.VelX
 	p.Y += p.VelY
 	p.checkBoundary(maxX, maxY)
+
+	if p.Invincible > 0 {
+		p.Invincible--
+	}
+}
+
+// ------------------------------------------------------------------------
+func (obj *Player) Draw(screen *ebiten.Image) {
+	if obj.Invincible%16 < 8 {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-obj.Width/2, -obj.Height/2)
+		op.GeoM.Rotate(obj.Angle * 2 * math.Pi / 360)
+		op.GeoM.Translate(obj.X, obj.Y)
+		screen.DrawImage(obj.Img, op)
+	}
+}
+
+// ------------------------------------------------------------------------
+func (p *Player) Reset() {
+	p.X = MAX_X / 2
+	p.Y = MAX_Y / 2
+	p.VelX = 0
+	p.VelY = 0
+	p.Angle = -90
+	p.Invincible = 60 * 3
 }

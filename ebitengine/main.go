@@ -51,6 +51,13 @@ func (g *Game) Init() {
 	g.controls = Controls{}
 	g.controls.Init()
 	g.player = MakePlayer()
+	g.Reset()
+}
+
+// ------------------------------------------------------------------------
+func (g *Game) Reset() {
+	g.player.Reset()
+	g.asteroids = make([]*Asteroid, 0)
 	g.Level = 1
 	g.Score = 0
 	g.Lives = 3
@@ -72,10 +79,20 @@ func (g *Game) Update() error {
 	}
 
 	if g.controls.Cmd["fire"] == 1 {
-		// create a new shot
-		s := MakeShotFromPlayer(g.player)
-		g.shots = append(g.shots, s)
 		g.controls.Cmd["fire"] = 0
+		if g.Lives > 0 {
+			// create a new shot
+			s := MakeShotFromPlayer(g.player)
+			g.shots = append(g.shots, s)
+		} else {
+			// restart the game
+			g.Reset()
+		}
+
+	}
+
+	if g.Lives > 0 {
+		g.player.Update(MAX_X, MAX_Y, g.controls)
 	}
 
 	for _, a := range g.asteroids {
@@ -84,7 +101,6 @@ func (g *Game) Update() error {
 	for _, s := range g.shots {
 		s.Update(MAX_X, MAX_Y)
 	}
-	g.player.Update(MAX_X, MAX_Y, g.controls)
 
 	for i, s := range g.shots {
 		if s.IsDead() {
@@ -93,7 +109,7 @@ func (g *Game) Update() error {
 		}
 	}
 
-	// do collision detection
+	// Asteroid-Shot collision detection
 	var new_asteroids []*Asteroid
 
 	for i, s := range g.shots {
@@ -114,6 +130,17 @@ func (g *Game) Update() error {
 		g.asteroids = append(g.asteroids, new_asteroids...)
 	}
 
+	// Asteroid-Player collision detection
+	if g.player.Invincible <= 0 && g.Lives > 0 {
+		for _, a := range g.asteroids {
+			if a.IntersectsWith(g.player) {
+				g.Lives--
+				if g.Lives > 0 {
+					g.player.Reset()
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -123,20 +150,26 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		s.Draw(screen)
 	}
 
-	g.player.Draw(screen)
-
 	for _, a := range g.asteroids {
 		a.Draw(screen)
+	}
+
+	if g.Lives > 0 {
+		g.player.Draw(screen)
 	}
 
 	// draw score
 	text.Draw(screen, fmt.Sprintf("%06d", g.Score), g.Font, MAX_X/2-100, 50, color.White)
 
 	// draw images for number of lives left
-	for i := 0; i < g.Lives; i++ {
+	for i := 0; i < g.Lives-1; i++ {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(40+(40*i)), 25)
 		screen.DrawImage(playerLifeImg, op)
+	}
+
+	if g.Lives <= 0 {
+		text.Draw(screen, "GAME OVER", g.Font, MAX_X/2-140, MAX_Y/2-50, color.White)
 	}
 
 	g.drawDebug(screen)
@@ -154,12 +187,12 @@ func (g *Game) drawDebug(screen *ebiten.Image) {
 	}
 
 	msg := fmt.Sprintf(
-		"FPS: %.1f  TPS: %.1f\n\nControls: %v\n\nPlayer: %v\nScore: %v",
+		"FPS: %.1f  TPS: %.1f\n\nControls: %v\n\nPlayer: %v\nInvincible: %v",
 		ebiten.ActualFPS(),
 		ebiten.ActualTPS(),
 		g.controls.Cmd,
 		g.player,
-		g.Score,
+		g.player.Invincible,
 	)
 	ebitenutil.DebugPrintAt(screen, msg, 0, 100)
 
