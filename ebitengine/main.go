@@ -23,6 +23,12 @@ const MAX_Y = 768
 //go:embed assets/*
 var assets embed.FS
 
+var playerLifeImg *ebiten.Image
+
+func init() {
+	playerLifeImg = MustLoadImage("assets/playerLife1_blue.png")
+}
+
 /**************************************************************************
  *                                  Game                                  *
  **************************************************************************/
@@ -31,6 +37,7 @@ type Game struct {
 	Debug     bool
 	Level     int
 	Score     int
+	Lives     int
 	player    *Player
 	asteroids []*Asteroid
 	shots     []*Shot
@@ -46,6 +53,7 @@ func (g *Game) Init() {
 	g.player = MakePlayer()
 	g.Level = 1
 	g.Score = 0
+	g.Lives = 3
 	g.makeLevel()
 }
 
@@ -114,12 +122,22 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	for _, s := range g.shots {
 		s.Draw(screen)
 	}
+
+	g.player.Draw(screen)
+
 	for _, a := range g.asteroids {
 		a.Draw(screen)
 	}
-	g.player.Draw(screen)
 
+	// draw score
 	text.Draw(screen, fmt.Sprintf("%06d", g.Score), g.Font, MAX_X/2-100, 50, color.White)
+
+	// draw images for number of lives left
+	for i := 0; i < g.Lives; i++ {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(40+(40*i)), 25)
+		screen.DrawImage(playerLifeImg, op)
+	}
 
 	g.drawDebug(screen)
 }
@@ -136,18 +154,18 @@ func (g *Game) drawDebug(screen *ebiten.Image) {
 	}
 
 	msg := fmt.Sprintf(
-		"FPS: %.1f  TPS: %.1f\n\nCMD: %v\n\nPlayer: %v\nScore: %v",
+		"FPS: %.1f  TPS: %.1f\n\nControls: %v\n\nPlayer: %v\nScore: %v",
 		ebiten.ActualFPS(),
 		ebiten.ActualTPS(),
 		g.controls.Cmd,
 		g.player,
 		g.Score,
 	)
-	ebitenutil.DebugPrint(screen, msg)
+	ebitenutil.DebugPrintAt(screen, msg, 0, 100)
 
 	for i, v := range g.shots {
 		msg := fmt.Sprintf("%d: %v", i, v)
-		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
+		ebitenutil.DebugPrintAt(screen, msg, 0, 200+(i*20))
 	}
 
 	for _, obj := range g.asteroids {
