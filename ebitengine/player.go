@@ -13,8 +13,8 @@ type Player struct {
 }
 
 // ------------------------------------------------------------------------
-func MakePlayer() Player {
-	p := Player{
+func MakePlayer() *Player {
+	p := &Player{
 		GameObject{X: MAX_X / 2, Y: MAX_Y / 2, VelX: 0, VelY: 0, Angle: -90},
 	}
 	p.LoadSprite("playerShip1_blue.png")

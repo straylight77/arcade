@@ -66,7 +66,7 @@ func MakeAsteroid(stage int, x, y, direction, speed float64) *Asteroid {
 	size := a.Img.Bounds().Size()
 	a.Width = float64(size.X)
 	a.Height = float64(size.Y)
-	a.Radius = math.Min(a.Width, a.Height) * 0.75
+	a.Radius = math.Min(a.Width, a.Height) * 0.5
 
 	return a
 }

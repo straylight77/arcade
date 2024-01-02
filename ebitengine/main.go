@@ -4,11 +4,13 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 const MAX_X = 1024
@@ -22,7 +24,7 @@ type Game struct {
 	Debug     bool
 	Level     int
 	Score     int
-	player    Player
+	player    *Player
 	asteroids []*Asteroid
 	shots     []*Shot
 	controls  Controls
@@ -54,7 +56,7 @@ func (g *Game) Update() error {
 
 	if g.controls.Cmd["fire"] == 1 {
 		// create a new shot
-		s := MakeShotFromPlayer(&g.player)
+		s := MakeShotFromPlayer(g.player)
 		g.shots = append(g.shots, s)
 		g.controls.Cmd["fire"] = 0
 	}
@@ -135,6 +137,24 @@ func (g *Game) drawDebug(screen *ebiten.Image) {
 		msg := fmt.Sprintf("%d: %v", i, v)
 		ebitenutil.DebugPrintAt(screen, msg, 0, 100+(i*20))
 	}
+
+	for _, obj := range g.asteroids {
+		g.drawHitbox(screen, obj)
+	}
+	for _, obj := range g.shots {
+		g.drawHitbox(screen, obj)
+	}
+	g.drawHitbox(screen, g.player)
+
+}
+
+// ------------------------------------------------------------------------
+func (g *Game) drawHitbox(screen *ebiten.Image, obj Sprite) {
+	x64, y64 := obj.GetPos()
+	x := float32(x64)
+	y := float32(y64)
+	r := float32(obj.GetRadius())
+	vector.StrokeCircle(screen, x, y, r, 1, color.White, true)
 }
 
 // ------------------------------------------------------------------------

@@ -13,7 +13,7 @@ type Sprite interface {
 	GetRadius() float64
 	//Speed() float64
 	//Direction() float64
-	Update(float64, float64)
+	//Update(float64, float64)
 	Draw(*ebiten.Image)
 	IsDead() bool
 	IntersectsWith(Sprite) bool
@@ -119,7 +119,7 @@ func (obj *GameObject) LoadSprite(fname string) {
 	size := obj.Img.Bounds().Size()
 	obj.Width = float64(size.X)
 	obj.Height = float64(size.Y)
-	obj.Radius = (obj.Width + obj.Height) / 2
+	obj.Radius = math.Min(obj.Width, obj.Height) * 0.6
 }
 
 // ------------------------------------------------------------------------
