@@ -1,8 +1,10 @@
 package main
 
 // Assets: https://kenney.nl/assets/space-shooter-redux
+// Fonts: https://www.kenney.nl/assets/kenney-fonts
 
 import (
+	"embed"
 	"fmt"
 	"image/color"
 	"log"
@@ -10,11 +12,16 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/font"
 )
 
 const MAX_X = 1024
 const MAX_Y = 768
+
+//go:embed assets/*
+var assets embed.FS
 
 /**************************************************************************
  *                                  Game                                  *
@@ -28,10 +35,12 @@ type Game struct {
 	asteroids []*Asteroid
 	shots     []*Shot
 	controls  Controls
+	Font      font.Face
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Init() {
+	g.Font = loadFont("assets/font.ttf")
 	g.controls = Controls{}
 	g.controls.Init()
 	g.player = MakePlayer()
@@ -109,6 +118,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		a.Draw(screen)
 	}
 	g.player.Draw(screen)
+
+	text.Draw(screen, fmt.Sprintf("%06d", g.Score), g.Font, MAX_X/2-100, 50, color.White)
+
 	g.drawDebug(screen)
 }
 

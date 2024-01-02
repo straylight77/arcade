@@ -5,18 +5,12 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 var ShotImg *ebiten.Image
 
 func init() {
-	fname := "laserBlue02.png"
-	var err error
-	ShotImg, _, err = ebitenutil.NewImageFromFile(fname)
-	if err != nil {
-		panic(err)
-	}
+	ShotImg = MustLoadImage("assets/laserBlue02.png")
 }
 
 /**************************************************************************

@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Sprite interface {
@@ -110,12 +109,8 @@ func (obj *GameObject) checkBoundary(maxX, maxY float64) {
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) LoadSprite(fname string) {
-	var err error
-	obj.Img, _, err = ebitenutil.NewImageFromFile(fname)
-	if err != nil {
-		panic(err)
-	}
+func (obj *GameObject) LoadSprite(name string) {
+	obj.Img = MustLoadImage(name)
 	size := obj.Img.Bounds().Size()
 	obj.Width = float64(size.X)
 	obj.Height = float64(size.Y)

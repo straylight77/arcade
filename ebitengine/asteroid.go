@@ -5,18 +5,12 @@ import (
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 var AsteroidImg *ebiten.Image
 
 func init() {
-	fname := "meteorBrown_big1.png"
-	var err error
-	AsteroidImg, _, err = ebitenutil.NewImageFromFile(fname)
-	if err != nil {
-		panic(err)
-	}
+	AsteroidImg = MustLoadImage("assets/meteorBrown_big1.png")
 }
 
 /**************************************************************************
@@ -54,13 +48,13 @@ func MakeAsteroid(stage int, x, y, direction, speed float64) *Asteroid {
 	//a.Img = AsteroidImg
 	switch stage {
 	case 3:
-		a.LoadSprite("meteorBrown_big1.png")
+		a.LoadSprite("assets/meteorBrown_big1.png")
 	case 2:
-		a.LoadSprite("meteorBrown_med1.png")
+		a.LoadSprite("assets/meteorBrown_med1.png")
 	case 1:
-		a.LoadSprite("meteorBrown_small1.png")
+		a.LoadSprite("assets/meteorBrown_small1.png")
 	default:
-		a.LoadSprite("meteorGrey_big1.png")
+		a.LoadSprite("assets/meteorGrey_big1.png")
 	}
 
 	size := a.Img.Bounds().Size()
