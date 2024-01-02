@@ -8,6 +8,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+type Sprite interface {
+	GetPos() (float64, float64)
+	GetRadius() float64
+	//Speed() float64
+	//Direction() float64
+	//Update(float64, float64)
+	//Draw(*ebiten.Image)
+	//IsDead() bool
+	IntersectsWith(Sprite) bool
+}
+
 /**************************************************************************
  *                              GameObject                                *
  **************************************************************************/
@@ -26,7 +37,7 @@ func (obj *GameObject) Update(maxX, maxY float64) {
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) Draw(screen *ebiten.Image) {
+func (obj GameObject) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(-obj.Width/2, -obj.Height/2)
 	//op.GeoM.Scale(0.5, 0.5)
@@ -36,26 +47,38 @@ func (obj *GameObject) Draw(screen *ebiten.Image) {
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) IsDead() bool {
+func (obj GameObject) IsDead() bool {
 	return false
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) Speed() float64 {
+func (obj GameObject) Speed() float64 {
 	return math.Sqrt(obj.VelX*obj.VelX + obj.VelY*obj.VelY)
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) Direction() float64 {
-	return math.Atan(obj.VelY / obj.VelX)
+func (obj GameObject) Direction() float64 {
+	return math.Atan2(obj.VelY, obj.VelX) * 180.0 / math.Pi
 }
 
 // ------------------------------------------------------------------------
-func (obj *GameObject) IntersectsWith(obj2 GameObject) bool {
-	dx := obj2.X - obj.X
-	dy := obj2.Y - obj.Y
+func (obj GameObject) GetPos() (float64, float64) {
+	return obj.X, obj.Y
+}
+
+// ------------------------------------------------------------------------
+func (obj GameObject) GetRadius() float64 {
+	return obj.Radius
+}
+
+// ------------------------------------------------------------------------
+func (obj GameObject) IntersectsWith(obj2 Sprite) bool {
+	x1, y1 := obj.GetPos()
+	x2, y2 := obj2.GetPos()
+	dx := x2 - x1
+	dy := y2 - y1
 	dist := math.Sqrt(dx*dx + dy*dy)
-	intersects := dist < (obj2.Radius + obj.Radius)
+	intersects := dist < (obj2.GetRadius() + obj.GetRadius())
 	return intersects
 }
 

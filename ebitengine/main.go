@@ -5,7 +5,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -74,18 +73,24 @@ func (g *Game) Update() error {
 	}
 
 	// do collision detection
+	new_asteroids := make([]*Asteroid, 0)
+
 	for i, s := range g.shots {
 		for j, a := range g.asteroids {
-			dx := s.X - a.X
-			dy := s.Y - a.Y
-			dist := math.Sqrt(dx*dx + dy*dy)
-			intersects := dist < a.Radius
 
-			if intersects {
+			if s.IntersectsWith(*a) {
+				dir := a.Direction()
+				spd := a.Speed()
+				new_a1 := MakeAsteroid(a.X, a.Y, dir-65.0, spd)
+				new_a2 := MakeAsteroid(a.X, a.Y, dir+65.0, spd)
+				new_asteroids = append(new_asteroids, new_a1, new_a2)
 				g.shots = append(g.shots[:i], g.shots[i+1:]...)
 				g.asteroids = append(g.asteroids[:j], g.asteroids[j+1:]...)
 			}
 		}
+	}
+	if len(new_asteroids) > 0 {
+		g.asteroids = append(g.asteroids, new_asteroids...)
 	}
 	return nil
 }
