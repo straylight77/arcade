@@ -19,7 +19,7 @@ func init() {
 type Shot struct {
 	GameObject
 	timeToLive int
-	dead       bool
+	Dead       bool
 }
 
 // ------------------------------------------------------------------------
@@ -59,13 +59,18 @@ func (s *Shot) Update(maxX, maxY float64) {
 		s.timeToLive--
 	}
 	if s.timeToLive <= 0 {
-		s.dead = true
+		s.Dead = true
 	}
 }
 
 // ------------------------------------------------------------------------
 func (s *Shot) IsDead() bool {
-	return s.dead
+	return s.Dead
+}
+
+// ------------------------------------------------------------------------
+func (s *Shot) Kill() {
+	s.Dead = true
 }
 
 // ------------------------------------------------------------------------
@@ -75,6 +80,6 @@ func (s Shot) String() string {
 		s.VelX, s.VelY,
 		s.X, s.Y,
 		s.timeToLive,
-		s.dead,
+		s.Dead,
 	)
 }

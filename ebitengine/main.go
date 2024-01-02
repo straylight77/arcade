@@ -43,6 +43,7 @@ type Game struct {
 	shots     []*Shot
 	controls  Controls
 	Font      font.Face
+	wait      int
 }
 
 // ------------------------------------------------------------------------
@@ -57,11 +58,12 @@ func (g *Game) Init() {
 // ------------------------------------------------------------------------
 func (g *Game) Reset() {
 	g.player.Reset()
-	g.asteroids = make([]*Asteroid, 0)
 	g.Level = 1
 	g.Score = 0
 	g.Lives = 3
+	g.asteroids = make([]*Asteroid, 0)
 	g.makeLevel()
+	g.killAllShots()
 }
 
 // ------------------------------------------------------------------------
@@ -76,6 +78,11 @@ func (g *Game) Update() error {
 	if g.controls.Cmd["debug"] == 1 {
 		g.Debug = !g.Debug
 		g.controls.Cmd["debug"] = 0
+	}
+
+	if g.wait > 0 {
+		g.wait--
+		return nil
 	}
 
 	if g.controls.Cmd["fire"] == 1 {
@@ -141,13 +148,25 @@ func (g *Game) Update() error {
 			}
 		}
 	}
+
+	// Check for end of level
+	if len(g.asteroids) == 0 {
+		g.player.Reset()
+		g.Level++
+		g.makeLevel()
+		g.killAllShots()
+		g.wait = 60 * 3
+	}
+
 	return nil
 }
 
 // ------------------------------------------------------------------------
 func (g *Game) Draw(screen *ebiten.Image) {
 	for _, s := range g.shots {
-		s.Draw(screen)
+		if !s.IsDead() {
+			s.Draw(screen)
+		}
 	}
 
 	for _, a := range g.asteroids {
@@ -159,12 +178,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// draw score
-	text.Draw(screen, fmt.Sprintf("%06d", g.Score), g.Font, MAX_X/2-100, 50, color.White)
+	text.Draw(screen, fmt.Sprintf("%06d", g.Score), g.Font, MAX_X/2-115, 50, color.White)
+	text.Draw(screen, fmt.Sprintf("%02d", g.Level), g.Font, MAX_X-100, 50, color.White)
+
+	if g.wait > 0 && g.wait%16 > 8 {
+		text.Draw(screen, fmt.Sprintf("Level %d", g.Level), g.Font, MAX_X/2-140, MAX_Y/2-50, color.White)
+	}
 
 	// draw images for number of lives left
 	for i := 0; i < g.Lives-1; i++ {
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(40+(40*i)), 25)
+		op.GeoM.Translate(float64(30+(40*i)), 25)
 		screen.DrawImage(playerLifeImg, op)
 	}
 
@@ -221,16 +245,20 @@ func (g *Game) drawHitbox(screen *ebiten.Image, obj Sprite) {
 }
 
 // ------------------------------------------------------------------------
+func (g *Game) killAllShots() {
+	g.shots = make([]*Shot, 0)
+}
+
+// ------------------------------------------------------------------------
 func (g *Game) makeLevel() {
-	//num := (g.level-1)/2 + 1
-	//stage := 3 - (g.level % 2)
-	num := 3
+	num := (g.Level-1)/2 + 1
+	stage := 3 - (g.Level % 2)
 	for i := 0; i < num; i++ {
 		dir := getRandDirection()
 		spd := getRandSpeed()
 		x := float64(rand.Intn(MAX_X))
 		y := float64(rand.Intn(MAX_Y))
-		a := MakeAsteroid(3, x, y, dir, spd)
+		a := MakeAsteroid(stage, x, y, dir, spd)
 		g.asteroids = append(g.asteroids, a)
 	}
 }
