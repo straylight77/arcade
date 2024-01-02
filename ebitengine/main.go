@@ -20,7 +20,8 @@ const MAX_Y = 768
 type Game struct {
 	Done      bool
 	Debug     bool
-	level     int
+	Level     int
+	Score     int
 	player    Player
 	asteroids []*Asteroid
 	shots     []*Shot
@@ -32,7 +33,8 @@ func (g *Game) Init() {
 	g.controls = Controls{}
 	g.controls.Init()
 	g.player = MakePlayer()
-	g.level = 1
+	g.Level = 1
+	g.Score = 0
 	g.makeLevel()
 }
 
@@ -73,17 +75,17 @@ func (g *Game) Update() error {
 	}
 
 	// do collision detection
-	new_asteroids := make([]*Asteroid, 0)
+	var new_asteroids []*Asteroid
 
 	for i, s := range g.shots {
 		for j, a := range g.asteroids {
 
-			if s.IntersectsWith(*a) {
-				dir := a.Direction()
-				spd := a.Speed()
-				new_a1 := MakeAsteroid(a.X, a.Y, dir-65.0, spd)
-				new_a2 := MakeAsteroid(a.X, a.Y, dir+65.0, spd)
-				new_asteroids = append(new_asteroids, new_a1, new_a2)
+			if s.IntersectsWith(a) {
+				g.Score += 100
+				if a.Stage > 1 {
+					a1, a2 := a.Split()
+					new_asteroids = append(new_asteroids, a1, a2)
+				}
 				g.shots = append(g.shots[:i], g.shots[i+1:]...)
 				g.asteroids = append(g.asteroids[:j], g.asteroids[j+1:]...)
 			}
@@ -92,6 +94,7 @@ func (g *Game) Update() error {
 	if len(new_asteroids) > 0 {
 		g.asteroids = append(g.asteroids, new_asteroids...)
 	}
+
 	return nil
 }
 
@@ -119,11 +122,12 @@ func (g *Game) drawDebug(screen *ebiten.Image) {
 	}
 
 	msg := fmt.Sprintf(
-		"FPS: %.1f  TPS: %.1f\n\nCMD: %v\n\nPlayer: %v",
+		"FPS: %.1f  TPS: %.1f\n\nCMD: %v\n\nPlayer: %v\nScore: %v",
 		ebiten.ActualFPS(),
 		ebiten.ActualTPS(),
 		g.controls.Cmd,
 		g.player,
+		g.Score,
 	)
 	ebitenutil.DebugPrint(screen, msg)
 
@@ -143,7 +147,7 @@ func (g *Game) makeLevel() {
 		spd := getRandSpeed()
 		x := float64(rand.Intn(MAX_X))
 		y := float64(rand.Intn(MAX_Y))
-		a := MakeAsteroid(x, y, dir, spd)
+		a := MakeAsteroid(3, x, y, dir, spd)
 		g.asteroids = append(g.asteroids, a)
 	}
 }
